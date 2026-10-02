@@ -2993,22 +2993,8 @@ class SpectrumBot:
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def show_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton('👤 Профиль', callback_data='menu_profile'), InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')],
-            [InlineKeyboardButton('🎮 Игры', callback_data='menu_games'), InlineKeyboardButton('👾 Боссы', callback_data='boss_list')],
-            [InlineKeyboardButton('🛍 Магазин', callback_data='shop_menu'), InlineKeyboardButton('💱 Биржа', callback_data='exchange_menu')],
-            [InlineKeyboardButton('🎯 Квесты', callback_data='menu_quests'), InlineKeyboardButton('🏆 Топ', callback_data='menu_top')],
-            [InlineKeyboardButton('📊 Статистика', callback_data='menu_stats'), InlineKeyboardButton('❓ Помощь', callback_data='help_menu')]
-        ])
-        text = f"""
-{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}
-
-💰 Экономика · 🎮 Игры · 🛡 Модерация · 🤖 AI
-
-Выберите раздел кнопкой ниже.
-
-{s.info('Команды: /balance /daily /shop /exchange /games')}
-        """
+        keyboard = self._ui_home_keyboard()
+        text = f"{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}\n\n💰 Экономика · 🎮 Игры · 👾 Боссы\n🛍 Магазин · 💱 Биржа · 🎯 Квесты\n📊 Статистика · 🏆 Рейтинги · 🎁 Бонусы\n\n👤 {update.effective_user.first_name} — выберите раздел."
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
 
     async def show_contacts(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8838,7 +8824,180 @@ class SpectrumBot:
                 ''', (chat.id, chat.title))
                 self.db.conn.commit()
 
+    async def _ui_edit(self, query, text, keyboard=None):
+        try:
+            await query.edit_message_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard, disable_web_page_preview=True)
+        except TelegramError:
+            await query.edit_message_text(text=text, reply_markup=keyboard, disable_web_page_preview=True)
+
+    def _ui_back(self):
+        return InlineKeyboardButton("◀️ Назад", callback_data="ui_home")
+
+    def _ui_home_keyboard(self):
+        return InlineKeyboardMarkup([
+            [InlineKeyboardButton("👤 Профиль", callback_data="ui_profile"), InlineKeyboardButton("💼 Кошелёк", callback_data="ui_wallet")],
+            [InlineKeyboardButton("🎮 Игры", callback_data="ui_games"), InlineKeyboardButton("👾 Боссы", callback_data="ui_bosses")],
+            [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop"), InlineKeyboardButton("💱 Биржа", callback_data="ui_exchange")],
+            [InlineKeyboardButton("🎯 Квесты", callback_data="ui_quests"), InlineKeyboardButton("🏆 Рейтинги", callback_data="ui_ratings")],
+            [InlineKeyboardButton("📊 Статистика", callback_data="ui_stats"), InlineKeyboardButton("🎁 Бонусы", callback_data="ui_bonuses")],
+            [InlineKeyboardButton("❓ Помощь", callback_data="ui_help"), InlineKeyboardButton("🔄 Обновить", callback_data="ui_home")],
+        ])
+
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        if not query:
+            return
+        await query.answer()
+        data = query.data or ""
+        user = query.from_user
+        u = self.db.get_user(user.id, user.first_name)
+
+        # Новая единая навигация. Все эти кнопки реально выполняют действие, а не показывают заглушку.
+        if data == "ui_home":
+            text = f"{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}\n\n💰 Экономика  ·  🎮 Игры  ·  👾 Боссы\n🛍 Магазин  ·  💱 Биржа  ·  🎯 Квесты\n📊 Статистика  ·  🏆 Рейтинги  ·  🎁 Бонусы\n\n👤 {user.first_name} · уровень {u['level']}\n💰 {u['coins']:,}  💜 {u['neons']:,}  🖥 {u['glitches']:,}"
+            await self._ui_edit(query, text, self._ui_home_keyboard()); return
+
+        if data == "ui_profile":
+            name = u.get('nickname') or user.first_name
+            exp_need = max(1, u['level'] * 100)
+            text = f"{s.header('👤 ПРОФИЛЬ')}\n\n**{name}**\n{get_rank_emoji(u['rank'])} {u['rank_name']}\n\n📈 Уровень: **{u['level']}**\n{s.progress(u['exp'], exp_need, 12)}\n⚡ Энергия: {u['energy']}/100\n❤️ Здоровье: {u['health']}/{u['max_health']}\n⭐ Репутация: {u['reputation']}\n⚔️ Рейтинг дуэлей: {u['duel_rating']}\n🏅 Ачивки: {len(self.db.get_user_achievements(u['id']))}\n\n💰 {u['coins']:,}  💜 {u['neons']:,}  🖥 {u['glitches']:,}"
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк",callback_data="ui_wallet"),InlineKeyboardButton("🏅 Ачивки",callback_data="ui_achievements")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
+
+        if data == "ui_wallet":
+            eco=self.db.economy_summary(u['id'],7); status='PREMIUM' if self.db.is_premium(u['id']) else 'VIP' if self.db.is_vip(u['id']) else 'Обычный'
+            text=f"{s.header('💼 КОШЕЛЁК')}\n\n💰 **{u['coins']:,}** / {MAX_COINS:,}\n{s.progress(u['coins'],MAX_COINS,12)}\n💜 **{u['neons']:,}** / {MAX_NEONS:,}\n{s.progress(u['neons'],MAX_NEONS,12)}\n🖥 **{u['glitches']:,}** / {MAX_GLITCHES:,}\n{s.progress(u['glitches'],MAX_GLITCHES,12)}\n\n📈 За 7 дней:\n💰 +{eco['coins_earned']:,} / −{eco['coins_spent']:,}\n💜 +{eco['neons_earned']:,} / −{eco['neons_spent']:,}\n🖥 +{eco['glitches_earned']:,} / −{eco['glitches_spent']:,}\n\n💎 Статус: {status}\n🔥 Стрик: {u['daily_streak']} дн."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 Daily",callback_data="ui_daily"),InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")],[InlineKeyboardButton("💱 Биржа",callback_data="ui_exchange"),InlineKeyboardButton("📜 История",callback_data="ui_history")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
+
+        if data == "ui_daily":
+            last=u.get('last_daily'); ready=True; remain="готов"
+            if last:
+                delta=(datetime.now()-datetime.fromisoformat(last)).total_seconds()
+                if delta<DAILY_COOLDOWN:
+                    ready=False; sec=int(DAILY_COOLDOWN-delta); remain=f"{sec//3600}ч {(sec%3600)//60}м"
+            text=f"{s.header('🎁 ЕЖЕДНЕВНЫЙ БОНУС')}\n\n🔥 Текущий стрик: **{u['daily_streak']} дн.**\n💰 Базовая награда: 180–260\n💜 Дополнительно: 1–2 неона\n\n{'✅ Бонус доступен' if ready else f'⏳ Следующий бонус через {remain}'}"
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 Забрать /daily",callback_data="ui_daily_claim")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
+
+        if data == "ui_daily_claim":
+            # Выполняем ту же механику напрямую, без попытки вызвать команду через callback-update.
+            last=u.get('last_daily')
+            if last and (datetime.now()-datetime.fromisoformat(last)).total_seconds()<DAILY_COOLDOWN:
+                await query.answer("Бонус ещё не готов",show_alert=True); return
+            streak=self.db.add_daily_streak(u['id']); coins=random.randint(180,260); neons=random.randint(1,2)
+            mult=1.0+min(streak,30)*0.5/30
+            if self.db.is_premium(u['id']): mult*=1.35
+            elif self.db.is_vip(u['id']): mult*=1.20
+            coins=int(coins*mult); self.db.add_coins(u['id'],coins); self.db.add_neons(u['id'],neons); self.db.cursor.execute("UPDATE users SET last_daily=? WHERE id=? AND platform='telegram'",(datetime.now().isoformat(),u['id'])); self.db.conn.commit()
+            await self._ui_edit(query,f"{s.header('🎁 БОНУС ПОЛУЧЕН')}\n\n💰 **+{coins:,}**\n💜 **+{neons}**\n🔥 Стрик: **{streak} дн.**",InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк",callback_data="ui_wallet")],[self._ui_back()]])); return
+
+        if data == "ui_shop":
+            text=f"{s.header('🛍 КИБЕР-МАГАЗИН')}\n\nВыберите раздел. Покупки ниже выполняются сразу и списывают реальные средства."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Лечение",callback_data="shop_heal"),InlineKeyboardButton("⚡ Энергия",callback_data="shop_energy")],[InlineKeyboardButton("⚔️ Оружие",callback_data="shop_weapons"),InlineKeyboardButton("💎 VIP/Premium",callback_data="shop_status")],[InlineKeyboardButton("🤖 Кибер-бонусы",callback_data="ui_bonuses")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
+
+        if data == "shop_heal":
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🧪 +30 HP · 50 💰",callback_data="buy_heal_30"),InlineKeyboardButton("🧪 +70 HP · 100 💰",callback_data="buy_heal_70")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n💰 Баланс: {u['coins']:,}\n❤️ Сейчас: {u['health']}/{u['max_health']}",kb); return
+        if data.startswith('buy_heal_'):
+            amount=int(data.rsplit('_',1)[1]); price=50 if amount==30 else 100
+            if u['coins']<price: await query.answer("Недостаточно монет",show_alert=True); return
+            self.db.add_coins(u['id'],-price); self.db.cursor.execute("UPDATE users SET health=MIN(max_health, health+?) WHERE id=? AND platform='telegram'",(amount,u['id'])); self.db.conn.commit(); u=self.db.get_user(user.id)
+            await query.answer("Покупка выполнена"); await self._ui_edit(query,f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n✅ +{amount} HP\n❤️ Теперь: {u['health']}/{u['max_health']}\n💰 Баланс: {u['coins']:,}",InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Ещё лечение",callback_data="shop_heal")],[InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")]])); return
+        if data == "shop_energy":
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🥤 +20 энергии · 30 💰",callback_data="buy_energy_20"),InlineKeyboardButton("🔋 +50 энергии · 80 💰",callback_data="buy_energy_50")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('⚡ ЭНЕРГИЯ')}\n\n💰 Баланс: {u['coins']:,}\n⚡ Сейчас: {u['energy']}/100",kb); return
+        if data.startswith('buy_energy_'):
+            amount=int(data.rsplit('_',1)[1]); price=30 if amount==20 else 80
+            if u['coins']<price: await query.answer("Недостаточно монет",show_alert=True); return
+            self.db.add_coins(u['id'],-price); self.db.add_energy(u['id'],amount); u=self.db.get_user(user.id)
+            await self._ui_edit(query,f"{s.header('⚡ ЭНЕРГИЯ')}\n\n✅ +{amount} энергии\n⚡ Теперь: {u['energy']}/100\n💰 Баланс: {u['coins']:,}",InlineKeyboardMarkup([[InlineKeyboardButton("⚡ Ещё энергия",callback_data="shop_energy")],[InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")]])); return
+        if data == "shop_weapons":
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🗡 +10 · 200 💰",callback_data="buy_weapon_sword"),InlineKeyboardButton("⚔️ +30 · 500 💰",callback_data="buy_weapon_legendary")],[InlineKeyboardButton("🔫 +50 · 1000 💰",callback_data="buy_weapon_blaster")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('⚔️ ОРУЖИЕ')}\n\n⚔️ Текущий урон: {u['damage']}\n🎯 Максимум: 100\n\nВыберите улучшение:",kb); return
+        if data == "shop_status":
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton(f"VIP · {VIP_PRICE:,} 💰",callback_data="buy_vip"),InlineKeyboardButton(f"Premium · {PREMIUM_PRICE:,} 💰",callback_data="buy_premium")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('💎 СТАТУСЫ')}\n\nVIP: {VIP_DAYS} дней\nPremium: {PREMIUM_DAYS} дней\n\n💰 Баланс: {u['coins']:,}",kb); return
+        if data in ('buy_vip','buy_premium'):
+            price=VIP_PRICE if data=='buy_vip' else PREMIUM_PRICE; days=VIP_DAYS if data=='buy_vip' else PREMIUM_DAYS; field='vip_until' if data=='buy_vip' else 'premium_until'
+            if u['coins']<price: await query.answer("Недостаточно монет",show_alert=True); return
+            self.db.add_coins(u['id'],-price); until=(datetime.now()+timedelta(days=days)).isoformat(); self.db.cursor.execute(f"UPDATE users SET {field}=? WHERE id=? AND platform='telegram'",(until,u['id'])); self.db.conn.commit(); await self._ui_edit(query,f"{s.header('💎 ПОКУПКА ВЫПОЛНЕНА')}\n\n✅ Статус активирован на {days} дней.\n💰 Списано: {price:,}",InlineKeyboardMarkup([[InlineKeyboardButton("💎 Статусы",callback_data="shop_status")],[InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")]])); return
+
+        if data == "ui_exchange":
+            stats=self.db.get_exchange_stats(); text=f"{s.header('💱 БИРЖА')}\n\n💰 Курс: **{stats['price']:,} 💰 / 💜**\n📊 Объём 24ч: {stats['volume_24h']:,}\n📋 Активных ордеров: {stats['active_orders']}\n\nИспользуйте команды /buyorder, /sellorder, /myorders и /cancelorder для торговли."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("📋 Мои ордера",callback_data="ui_myorders"),InlineKeyboardButton("🔄 Обновить",callback_data="ui_exchange")],[self._ui_back()]])); return
+        if data == "ui_myorders":
+            rows=self.db.get_user_orders(u['id']) if hasattr(self.db,'get_user_orders') else []
+            text=f"{s.header('📋 МОИ ОРДЕРА')}\n\n"
+            if rows:
+                for r in rows[:10]: text+=f"#{r['id']} · {r['order_type']} · {r['amount']} 💜 · {r['price']} 💰\n"
+            else: text+='Активных ордеров нет.'
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("💱 Биржа",callback_data="ui_exchange")],[self._ui_back()]])); return
+
+        if data == "ui_games":
+            text=f"{s.header('🎮 ИГРЫ')}\n\n🎲 /dicebet [ставка]\n🎰 /slots [ставка]\n✊ /rps\n💣 /saper [ставка]\n🔢 /guess [ставка]\n🐂 /bulls [ставка]\n🔫 /rr [ставка]\n⚔️ /duel\n🎭 /mafia"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🎲 Кости",callback_data="game_info_dice"),InlineKeyboardButton("🎰 Слоты",callback_data="game_info_slots")],[InlineKeyboardButton("✊ КНБ",callback_data="game_info_rps"),InlineKeyboardButton("💣 Сапёр",callback_data="game_info_saper")],[InlineKeyboardButton("⚔️ Дуэль",callback_data="game_info_duel"),InlineKeyboardButton("🎭 Мафия",callback_data="game_info_mafia")],[self._ui_back()]])); return
+        if data.startswith('game_info_'):
+            names={'dice':'/dicebet [ставка] — бросок костей','slots':'/slots [ставка] — игровые слоты','rps':'/rps — камень, ножницы, бумага','saper':'/saper [ставка] — сапёр','duel':'/duel @user [ставка] — дуэль','mafia':'/mafia — запустить мафию'}
+            await query.answer(names.get(data[10:],'Команда доступна через /games'),show_alert=True); return
+
+        if data == "ui_quests":
+            quests=self.db.get_user_quests(u['id'])
+            if not quests: quests=self.db.assign_daily_quests(u['id'])+self.db.assign_weekly_quests(u['id'])
+            text=f"{s.header('🎯 КВЕСТЫ')}\n\n"
+            for q in quests[:6]: text+=f"**{q['name']}**\n{q['description']}\n{s.progress(q['progress'],q['condition_value'],10)}\n💜 {q['reward_neons']} · 🖥 {q['reward_glitches']}\n\n"
+            if not quests:text+='Нет активных квестов.'
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Обновить",callback_data="ui_quests")],[self._ui_back()]])); return
+
+        if data == "ui_ratings":
+            rows=self.db.get_top('coins',10); text=f"{s.header('🏆 РЕЙТИНГИ')}\n\n"
+            for i,row in enumerate(rows,1): text+=f"{('🥇' if i==1 else '🥈' if i==2 else '🥉' if i==3 else f'{i}.')} {row[1] or row[0] or 'Игрок'} — {row[2]:,} 💰\n"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("💜 Неоны",callback_data="rating_neons"),InlineKeyboardButton("🖥 Глитчи",callback_data="rating_glitches")],[self._ui_back()]])); return
+        if data in ('rating_neons','rating_glitches'):
+            field='neons' if data=='rating_neons' else 'glitches'; rows=self.db.get_top(field,10); text=f"{s.header('🏆 ТОП')}\n\n"
+            for i,row in enumerate(rows,1): text+=f"{i}. {row[1] or row[0] or 'Игрок'} — {row[2]:,}\n"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🏆 Монеты",callback_data="ui_ratings")],[self._ui_back()]])); return
+
+        if data == "ui_stats":
+            text=f"{s.header('📊 МОЯ СТАТИСТИКА')}\n\n💬 Сообщений: {u['messages_count']:,}\n🎮 Команд: {u['commands_used']:,}\n⚔️ Побед в дуэлях: {u['duel_wins']:,}\n👾 Боссов: {u['boss_kills']:,}\n🏆 Рейтинг: {u['duel_rating']}\n⭐ Репутация: {u['reputation']}"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("👤 Профиль",callback_data="ui_profile")],[self._ui_back()]])); return
+
+        if data == "ui_bonuses":
+            text=f"{s.header('🎁 КИБЕР-БОНУСЫ')}\n\n👾 Кибер-статус\n🔨 Глитч-молот\n⚡ Турбо-драйв\n👻 Невидимка\n🌈 Неон-ник\n🎰 Кибер-удача\n🔒 Файрволл\n🤖 РП-пакет\n\nПокупка и управление доступны через /bonuses."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🛍 Открыть бонусы",callback_data="bonuses_menu")],[self._ui_back()]])); return
+        if data == "ui_achievements":
+            ach=self.db.get_user_achievements(u['id']); text=f"{s.header('🏅 ДОСТИЖЕНИЯ')}\n\nПолучено: **{len(ach)}**"
+            for a in ach[:20]: text+=f"\n🏅 {a.get('name','Достижение')}"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[self._ui_back()]])); return
+        if data == "ui_history":
+            text=f"{s.header('📜 ИСТОРИЯ')}\n\nИстория операций сохраняется в журнале экономики. Для просмотра полной истории используйте статистику экономики."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("📊 Экономика",callback_data="ui_wallet")],[self._ui_back()]])); return
+        if data == "ui_bosses":
+            bosses=self.db.get_bosses()
+            text=f"{s.header('👾 БОССЫ')}\n\n"
+            buttons=[]
+            for boss in bosses[:6]:
+                status="⚔️" if boss['is_alive'] else "💀"
+                text += f"{status} **{boss['name']}**\n{s.progress(boss['health'],boss['max_health'],12)}\n❤️ {boss['health']:,}/{boss['max_health']:,}\n\n"
+                if boss['is_alive']:
+                    buttons.append(InlineKeyboardButton(f"⚔️ {boss['name']}",callback_data=f"boss_attack_{boss['id']}"))
+            if not buttons: text += "Все доступные боссы сейчас повержены."
+            buttons.append(InlineKeyboardButton("🔄 Регенерация",callback_data="boss_regen"))
+            buttons.append(self._ui_back())
+            await self._ui_edit(query,text,InlineKeyboardMarkup(self._split_buttons(buttons,1))); return
+        if data == "ui_help":
+            text=f"{s.header('❓ ПОМОЩЬ')}\n\n/start — запуск\n/menu — главное меню\n/profile — профиль\n/balance — кошелёк\n/daily — ежедневный бонус\n/shop — магазин\n/exchange — биржа\n/games — игры\n/quests — квесты\n/bonuses — кибер-бонусы\n/stats — статистика\n/top — рейтинги\n\n🤖 AI: напишите **Спектр ...** или откройте ЛС с ботом."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[self._ui_back()]])); return
+        if data.startswith('chat_card_'):
+            chat_id=int(data.split('_')[2]); self.db.cursor.execute("SELECT chat_name, chat_code FROM chat_settings WHERE chat_id=?",(chat_id,)); row=self.db.cursor.fetchone()
+            if row:
+                await self._ui_edit(query,f"{s.header('📇 КАРТОЧКА ЧАТА')}\n\n💬 {row[0] or 'Без названия'}\n🔑 Код: `{row[1] or 'не задан'}`\n🆔 `{chat_id}`",InlineKeyboardMarkup([[InlineKeyboardButton("◀️ К рейтингу",callback_data="top_chats")]])); return
+
+        # Старые игровые/служебные callback'и сохраняются и продолжают работать.
+        await self._legacy_button_callback(update, context)
+
+    async def _legacy_button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
 
@@ -9310,7 +9469,7 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
 
         else:
-            await query.edit_message_text("ℹ️ Функция в разработке")
+            await query.edit_message_text("ℹ️ Кнопка больше не привязана к действию. Откройте /menu и выберите раздел заново.")
 
     # ===== ТАЙМЕРЫ =====
     async def check_timers(self):
