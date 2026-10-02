@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-СПЕКТР v7.0 ULTIMATE - ПОЛНАЯ АНТИИНФЛЯЦИОННАЯ ВЕРСИЯ С ДВУМЯ AI
+СПЕКТР v7.1 ULTIMATE - ОБНОВЛЁННАЯ ЭКОНОМИКА И ИНТЕРФЕЙС
 """
 
 # ========== ИМПОРТЫ ==========
@@ -76,15 +76,19 @@ if not TOKEN:
     sys.exit(1)
 
 # ========== АНТИИНФЛЯЦИОННЫЕ ЛИМИТЫ (НОВЫЕ) ==========
-MAX_COINS = 1_000_000          # Максимум монет
-MAX_NEONS = 100_000             # Максимум неонов
-MAX_GLITCHES = 500_000          # Максимум глитчей
-WEALTH_TAX_RATE = 0.01          # 1% налог на богатство (еженедельно)
-WEALTH_TAX_THRESHOLD = 500_000  # Налог применяется к балансам выше этой суммы (в монетах)
+MAX_COINS = 1_000_000
+MAX_NEONS = 100_000
+MAX_GLITCHES = 500_000
+WEALTH_TAX_RATE = 0.01
+WEALTH_TAX_THRESHOLD = 500_000
+NEON_WEALTH_TAX_THRESHOLD = 25_000
+GLITCH_WEALTH_TAX_THRESHOLD = 100_000
+NEON_PRICE = 150
+ECONOMY_VERSION = "7.1"
 
 # ========== КОНСТАНТЫ ==========
 BOT_NAME = "Спектр"
-BOT_VERSION = "7.0 ULTIMATE"
+BOT_VERSION = "7.1 ULTIMATE"
 BOT_USERNAME = "SpectrumServers_bot"
 
 # Настройки модерации
@@ -127,7 +131,6 @@ MAX_MOTTO_LENGTH = 100
 MAX_BIO_LENGTH = 500
 
 # Новые константы для бонусов
-NEON_PRICE = 100  # 1 неон = 100 глитчей
 GLITCH_FARM_COOLDOWN = 14400  # 4 часа в секундах
 MAX_CIRCLES_PER_USER = 5
 MAX_CIRCLES_PER_CHAT = 20
@@ -770,6 +773,21 @@ class Database:
             )
         ''')
         
+        # Журнал экономики — аудит источников и стоков валют
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS economy_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                platform TEXT DEFAULT 'telegram',
+                currency TEXT,
+                amount INTEGER,
+                balance_after INTEGER,
+                source TEXT,
+                meta TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
         # Таблица биржи
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS exchange_orders (
@@ -901,6 +919,30 @@ class Database:
                 ''', quest)
             self.conn.commit()
 
+    # ===== ЭКОНОМИЧЕСКИЙ АУДИТ =====
+    def record_economy(self, user_id: int, currency: str, amount: int, source: str,
+                       platform: str = "telegram", meta: str = ""):
+        self.cursor.execute(f"SELECT {currency} FROM users WHERE id = ? AND platform = ?", (user_id, platform))
+        row = self.cursor.fetchone()
+        balance = int(row[0]) if row else 0
+        self.cursor.execute(
+            "INSERT INTO economy_transactions (user_id, platform, currency, amount, balance_after, source, meta) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, platform, currency, amount, balance, source, meta)
+        )
+
+    def economy_summary(self, user_id: int, days: int = 7, platform: str = "telegram") -> Dict[str, int]:
+        since = (datetime.now() - timedelta(days=days)).isoformat()
+        result = {}
+        for currency in ("coins", "neons", "glitches"):
+            self.cursor.execute(
+                "SELECT COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END),0) FROM economy_transactions WHERE user_id = ? AND platform = ? AND currency = ? AND created_at >= ?",
+                (user_id, platform, currency, since)
+            )
+            earned, spent = self.cursor.fetchone()
+            result[currency + "_earned"] = int(earned)
+            result[currency + "_spent"] = int(spent)
+        return result
+
     # ===== АНТИИНФЛЯЦИОННЫЕ МЕТОДЫ (НОВЫЕ) =====
     def add_coins(self, user_id: int, amount: int, platform: str = "telegram") -> int:
         """Добавляет монеты с проверкой лимита"""
@@ -909,11 +951,15 @@ class Database:
             return 0
         current = user['coins']
         new_balance = current + amount
+        if new_balance < 0:
+            amount = -current
+            new_balance = 0
         if new_balance > MAX_COINS:
             amount = MAX_COINS - current
             if amount <= 0:
                 return current
         self.cursor.execute("UPDATE users SET coins = coins + ? WHERE id = ? AND platform = ?", (amount, user_id, platform))
+        self.record_economy(user_id, "coins", amount, "balance", platform)
         self.conn.commit()
         return current + amount
 
@@ -924,11 +970,15 @@ class Database:
             return 0
         current = user['neons']
         new_balance = current + amount
+        if new_balance < 0:
+            amount = -current
+            new_balance = 0
         if new_balance > MAX_NEONS:
             amount = MAX_NEONS - current
             if amount <= 0:
                 return current
         self.cursor.execute("UPDATE users SET neons = neons + ? WHERE id = ? AND platform = ?", (amount, user_id, platform))
+        self.record_economy(user_id, "neons", amount, "balance", platform)
         self.conn.commit()
         self.check_wealth_achievements(user_id, platform)
         return current + amount
@@ -940,11 +990,15 @@ class Database:
             return 0
         current = user['glitches']
         new_balance = current + amount
+        if new_balance < 0:
+            amount = -current
+            new_balance = 0
         if new_balance > MAX_GLITCHES:
             amount = MAX_GLITCHES - current
             if amount <= 0:
                 return current
         self.cursor.execute("UPDATE users SET glitches = glitches + ? WHERE id = ? AND platform = ?", (amount, user_id, platform))
+        self.record_economy(user_id, "glitches", amount, "balance", platform)
         self.conn.commit()
         self.check_glitch_achievements(user_id, platform)
         return current + amount
@@ -970,19 +1024,19 @@ class Database:
             self.log_action(user_id, "wealth_tax", f"-{tax} coins")
         
         # Неоны (порог в 10 раз меньше)
-        self.cursor.execute("SELECT id, neons FROM users WHERE neons > ? AND platform='telegram'", (WEALTH_TAX_THRESHOLD // 10,))
+        self.cursor.execute("SELECT id, neons FROM users WHERE neons > ? AND platform='telegram'", (NEON_WEALTH_TAX_THRESHOLD,))
         for row in self.cursor.fetchall():
             user_id, neons = row[0], row[1]
-            excess = neons - (WEALTH_TAX_THRESHOLD // 10)
+            excess = neons - NEON_WEALTH_TAX_THRESHOLD
             tax = int(excess * WEALTH_TAX_RATE)
             self.add_neons(user_id, -tax)
             self.log_action(user_id, "wealth_tax", f"-{tax} neons")
         
         # Глитчи (порог в 10 раз меньше)
-        self.cursor.execute("SELECT id, glitches FROM users WHERE glitches > ? AND platform='telegram'", (WEALTH_TAX_THRESHOLD // 10,))
+        self.cursor.execute("SELECT id, glitches FROM users WHERE glitches > ? AND platform='telegram'", (GLITCH_WEALTH_TAX_THRESHOLD,))
         for row in self.cursor.fetchall():
             user_id, glitches = row[0], row[1]
-            excess = glitches - (WEALTH_TAX_THRESHOLD // 10)
+            excess = glitches - GLITCH_WEALTH_TAX_THRESHOLD
             tax = int(excess * WEALTH_TAX_RATE)
             self.add_glitches(user_id, -tax)
             self.log_action(user_id, "wealth_tax", f"-{tax} glitches")
@@ -2014,87 +2068,82 @@ class Database:
         self.conn.commit()
 
     # ===== НОВЫЕ МЕТОДЫ ДЛЯ БИРЖИ =====
-    def create_exchange_order(self, user_id: int, order_type: str, currency_from: str, 
+    def create_exchange_order(self, user_id: int, order_type: str, currency_from: str,
                              currency_to: str, amount: int, price: int, platform: str = "telegram") -> Optional[int]:
-        user = self.get_user_by_id(user_id, platform)
-        if currency_from == 'coins' and user['coins'] < amount:
+        if amount <= 0 or price <= 0 or order_type not in ('buy', 'sell'):
             return None
-        elif currency_from == 'neons' and user['neons'] < amount:
+        user = self.get_user_by_id(user_id, platform)
+        if not user or currency_from not in ('coins', 'neons') or currency_to not in ('coins', 'neons'):
+            return None
+        if currency_from == currency_to:
+            return None
+        locked = amount * price if currency_from == 'coins' else amount
+        if user[currency_from] < locked:
             return None
         if currency_from == 'coins':
-            self.add_coins(user_id, -amount, platform)
+            self.add_coins(user_id, -locked, platform)
         else:
-            self.add_neons(user_id, -amount, platform)
+            self.add_neons(user_id, -locked, platform)
         self.cursor.execute('''
             INSERT INTO exchange_orders (user_id, type, currency_from, currency_to, amount, price, platform)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', (user_id, order_type, currency_from, currency_to, amount, price, platform))
         order_id = self.cursor.lastrowid
         self.conn.commit()
-        asyncio.create_task(self.match_exchange_orders())
+        self.match_exchange_orders()
         return order_id
-    
+
     def match_exchange_orders(self):
         self.cursor.execute('''
-            SELECT * FROM exchange_orders 
+            SELECT * FROM exchange_orders
             WHERE status = 'active' AND filled < amount
-            ORDER BY price DESC, created_at ASC
+            ORDER BY created_at ASC
         ''')
         orders = self.cursor.fetchall()
-        buy_orders = [o for o in orders if o[2] == 'buy']
-        sell_orders = [o for o in orders if o[2] == 'sell']
+        buy_orders = [o for o in orders if o[2] == 'buy' and o[3] == 'coins' and o[4] == 'neons']
+        sell_orders = [o for o in orders if o[2] == 'sell' and o[3] == 'neons' and o[4] == 'coins']
         for buy in buy_orders:
             for sell in sell_orders:
-                if buy[4] != sell[4]:
+                if buy[6] < sell[6]:
                     continue
-                if buy[5] >= sell[5]:
-                    price = sell[5]
-                    max_amount = min(buy[6] - buy[7], sell[6] - sell[7])
-                    if max_amount > 0:
-                        self.execute_exchange_trade(buy[0], sell[0], price, max_amount)
+                max_amount = min(buy[5] - buy[7], sell[5] - sell[7])
+                if max_amount > 0:
+                    self.execute_exchange_trade(buy[0], sell[0], sell[6], max_amount)
+                    if buy[7] >= buy[5]:
                         break
         self.conn.commit()
-    
+
     def execute_exchange_trade(self, buy_order_id: int, sell_order_id: int, price: int, amount: int):
         self.cursor.execute("SELECT * FROM exchange_orders WHERE id = ?", (buy_order_id,))
         buy = self.cursor.fetchone()
         self.cursor.execute("SELECT * FROM exchange_orders WHERE id = ?", (sell_order_id,))
         sell = self.cursor.fetchone()
-        if not buy or not sell:
+        if not buy or not sell or amount <= 0:
             return
-        commission = int(amount * price * EXCHANGE_COMMISSION)
-        if buy[3] == 'coins':
-            total_cost = amount * price
-            self.add_coins(sell[1], total_cost - commission, sell[9])
-            self.add_neons(buy[1], amount, buy[9])
-        else:
-            total_cost = amount * price
-            self.add_neons(sell[1], total_cost - commission, sell[9])
-            self.add_coins(buy[1], amount, buy[9])
+        total_cost = amount * price
+        commission = int(total_cost * EXCHANGE_COMMISSION)
+        buyer_reserved_price = buy[6]
+        reserved_for_trade = amount * buyer_reserved_price
+        refund = reserved_for_trade - total_cost
+        if refund > 0:
+            self.add_coins(buy[1], refund, buy[10])
+        self.add_neons(buy[1], amount, buy[10])
+        self.add_coins(sell[1], total_cost - commission, sell[10])
+        if commission:
+            self.record_economy(sell[1], 'coins', -commission, 'exchange_fee', sell[10])
         new_filled_buy = buy[7] + amount
         new_filled_sell = sell[7] + amount
-        self.cursor.execute('''
-            UPDATE exchange_orders 
-            SET filled = ?, status = CASE WHEN filled >= amount THEN 'completed' ELSE 'active' END
-            WHERE id = ?
-        ''', (new_filled_buy, buy_order_id))
-        self.cursor.execute('''
-            UPDATE exchange_orders 
-            SET filled = ?, status = CASE WHEN filled >= amount THEN 'completed' ELSE 'active' END
-            WHERE id = ?
-        ''', (new_filled_sell, sell_order_id))
-        self.cursor.execute('''
-            INSERT INTO exchange_history (price, volume)
-            VALUES (?, ?)
-        ''', (price, amount))
-        self.cursor.execute('''
-            UPDATE users SET exchange_volume = exchange_volume + ? WHERE id = ?
-        ''', (amount * price, buy[1]))
-        self.cursor.execute('''
-            UPDATE users SET exchange_volume = exchange_volume + ? WHERE id = ?
-        ''', (amount * price, sell[1]))
+        self.cursor.execute('''UPDATE exchange_orders
+            SET filled = ?, status = CASE WHEN ? >= amount THEN 'completed' ELSE 'active' END WHERE id = ?''',
+            (new_filled_buy, new_filled_buy, buy_order_id))
+        self.cursor.execute('''UPDATE exchange_orders
+            SET filled = ?, status = CASE WHEN ? >= amount THEN 'completed' ELSE 'active' END WHERE id = ?''',
+            (new_filled_sell, new_filled_sell, sell_order_id))
+        self.cursor.execute('INSERT INTO exchange_history (price, volume) VALUES (?, ?)', (price, total_cost))
+        self.cursor.execute('UPDATE users SET exchange_volume = exchange_volume + ? WHERE id = ?', (total_cost, buy[1]))
+        self.cursor.execute('UPDATE users SET exchange_volume = exchange_volume + ? WHERE id = ?', (total_cost, sell[1]))
         self.conn.commit()
-    
+
     def get_exchange_stats(self) -> Dict:
         self.cursor.execute('''
             SELECT AVG(price) FROM exchange_history 
@@ -2125,10 +2174,10 @@ class Database:
         order = self.cursor.fetchone()
         if not order:
             return False
-        remaining = order[6] - order[7]
+        remaining = order[5] - order[7]
         if remaining > 0:
             if order[3] == 'coins':
-                self.add_coins(user_id, remaining, platform)
+                self.add_coins(user_id, remaining * order[6], platform)
             else:
                 self.add_neons(user_id, remaining, platform)
         self.cursor.execute('''
@@ -2923,23 +2972,23 @@ class SpectrumBot:
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def show_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        text = """
-# Спектр | Меню
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton('👤 Профиль', callback_data='menu_profile'), InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')],
+            [InlineKeyboardButton('🎮 Игры', callback_data='menu_games'), InlineKeyboardButton('👾 Боссы', callback_data='boss_list')],
+            [InlineKeyboardButton('🛍 Магазин', callback_data='shop_menu'), InlineKeyboardButton('💱 Биржа', callback_data='exchange_menu')],
+            [InlineKeyboardButton('🎯 Квесты', callback_data='menu_quests'), InlineKeyboardButton('🏆 Топ', callback_data='menu_top')],
+            [InlineKeyboardButton('📊 Статистика', callback_data='menu_stats'), InlineKeyboardButton('❓ Помощь', callback_data='help_menu')]
+        ])
+        text = f"""
+{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}
 
-Выберите действие (напишите цифру):
+💰 Экономика · 🎮 Игры · 🛡 Модерация · 🤖 AI
 
-1️⃣ 👤 Профиль
-2️⃣ 📊 Статистика
-3️⃣ 🎮 Игры
-4️⃣ 💰 Магазин
-5️⃣ 📈 График активности
-6️⃣ ❓ Помощь
-7️⃣ 📞 Контакты
-0️⃣ 🔙 Выход
+Выберите раздел кнопкой ниже.
 
-📝 Просто напишите номер в чат
+{s.info('Команды: /balance /daily /shop /exchange /games')}
         """
-        await update.message.reply_text(text, parse_mode='Markdown')
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
 
     async def show_contacts(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
@@ -3359,31 +3408,34 @@ class SpectrumBot:
     async def cmd_balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
-        vip_status = "✅ Активен" if self.db.is_vip(user_data['id']) else "❌ Не активен"
-        vip_until = ""
-        if self.db.is_vip(user_data['id']):
-            vip_until = self.db.cursor.execute("SELECT vip_until FROM users WHERE id = ?", (user_data['id'],)).fetchone()[0]
-            vip_until = datetime.fromisoformat(vip_until).strftime("%d.%m.%Y")
-        premium_status = "✅ Активен" if self.db.is_premium(user_data['id']) else "❌ Не активен"
+        eco = self.db.economy_summary(user_data['id'], 7)
+        status = 'PREMIUM' if self.db.is_premium(user_data['id']) else 'VIP' if self.db.is_vip(user_data['id']) else 'Обычный'
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🎁 Daily", callback_data="economy_daily_info"), InlineKeyboardButton("🛍 Магазин", callback_data="shop_menu")],
+            [InlineKeyboardButton("💱 Биржа", callback_data="exchange_menu"), InlineKeyboardButton("📊 Экономика 7д", callback_data="economy_stats")],
+            [InlineKeyboardButton("🔄 Обновить", callback_data="economy_wallet")]
+        ])
         text = f"""
-{s.header('КОШЕЛЁК')}
+{s.header('💼 КИБЕР-КОШЕЛЁК')}
 
-👤 **{user.first_name}**
+👤 **{user.first_name}** · уровень {user_data['level']}
 
-{s.stat('Монеты', f'{user_data["coins"]:,} 💰')}
-{s.stat('Неоны', f'{user_data["neons"]:,} 💜')}
-{s.stat('Глитчи', f'{user_data["glitches"]:,} 🖥')}
+💰 **{user_data['coins']:,}** / {MAX_COINS:,}
+{s.progress(user_data['coins'], MAX_COINS, 12)}
+💜 **{user_data['neons']:,}** / {MAX_NEONS:,}
+{s.progress(user_data['neons'], MAX_NEONS, 12)}
+🖥 **{user_data['glitches']:,}** / {MAX_GLITCHES:,}
+{s.progress(user_data['glitches'], MAX_GLITCHES, 12)}
 
-{s.section('💎 СТАТУСЫ')}
-{s.stat('VIP', vip_status)}
-{f'📅 VIP до: {vip_until}' if self.db.is_vip(user_data['id']) else ''}
-{s.stat('PREMIUM', premium_status)}
+{s.section('📈 ЗА 7 ДНЕЙ')}
+💰 +{eco['coins_earned']:,} / −{eco['coins_spent']:,}
+💜 +{eco['neons_earned']:,} / −{eco['neons_spent']:,}
+🖥 +{eco['glitches_earned']:,} / −{eco['glitches_spent']:,}
 
-{s.section('🔥 СТРИК')}
-{s.stat('Дней подряд', user_data['daily_streak'])}
-{s.cmd('daily', 'забрать ежедневный бонус')}
+💎 **Статус:** {status}
+🔥 **Стрик:** {user_data['daily_streak']} дн.
         """
-        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
 
     async def cmd_pay(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 2:
@@ -3410,6 +3462,8 @@ class SpectrumBot:
             await update.message.reply_text(s.error("Нельзя перевести самому себе"))
             return
         commission = self.db.get_transfer_commission(amount)
+        if self.db.is_premium(user_data['id']): commission //= 2
+        elif self.db.is_vip(user_data['id']): commission = int(commission * 0.75)
         total_deduction = amount + commission
         if user_data['coins'] < total_deduction:
             await update.message.reply_text(s.error(f"Недостаточно монет с учётом комиссии. Нужно {total_deduction} 💰"))
@@ -3433,55 +3487,49 @@ class SpectrumBot:
     async def cmd_daily(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+        now = datetime.now()
         if user_data.get('last_daily'):
             last = datetime.fromisoformat(user_data['last_daily'])
-            if (datetime.now() - last).seconds < DAILY_COOLDOWN:
-                remain = DAILY_COOLDOWN - (datetime.now() - last).seconds
-                hours = remain // 3600
-                minutes = (remain % 3600) // 60
-                await update.message.reply_text(s.warning(f"Бонус через {hours}ч {minutes}м"))
+            elapsed = (now - last).total_seconds()
+            if elapsed < DAILY_COOLDOWN:
+                remain = int(DAILY_COOLDOWN - elapsed)
+                hours, rem = divmod(remain, 3600)
+                minutes = rem // 60
+                await update.message.reply_text(s.warning(f"Бонус будет доступен через {hours}ч {minutes}м"), parse_mode=ParseMode.MARKDOWN)
                 return
         streak = self.db.add_daily_streak(user_data['id'])
-        coins = random.randint(100, 300)
-        neons = random.randint(1, 5)
-        exp = random.randint(20, 60)
-        energy = 20
-        # Антиинфляционный фактор: чем больше у пользователя валюты, тем меньше прирост
-        balance_factor = max(0.5, 1.0 - (user_data['coins'] / MAX_COINS) * 0.5)
-        coins = int(coins * balance_factor)
-        neons = int(neons * balance_factor)
-        streak_multiplier = 1 + min(streak, 30) * 0.05
-        coins = int(coins * streak_multiplier)
-        neons = int(neons * streak_multiplier)
+        coins = random.randint(180, 260)
+        neons = random.randint(1, 2)
+        exp = random.randint(30, 50)
+        energy = 15
+        streak_multiplier = 1.0 + min(streak, 10) * 0.05
+        balance_factor = max(0.65, 1.0 - (user_data['coins'] / MAX_COINS) * 0.35)
+        coins = max(1, int(coins * streak_multiplier * balance_factor))
+        neons = max(1, int(neons * streak_multiplier))
         exp = int(exp * streak_multiplier)
-        if self.db.is_vip(user_data['id']):
-            coins = int(coins * 1.5)
-            neons = int(neons * 1.5)
-            exp = int(exp * 1.5)
-            energy = int(energy * 1.5)
         if self.db.is_premium(user_data['id']):
-            coins = int(coins * 2)
-            neons = int(neons * 2)
-            exp = int(exp * 2)
-            energy = int(energy * 2)
+            coins = int(coins * 1.35); neons = max(1, int(neons * 1.35)); exp = int(exp * 1.35); energy = 20
+        elif self.db.is_vip(user_data['id']):
+            coins = int(coins * 1.20); neons = max(1, int(neons * 1.20)); exp = int(exp * 1.20); energy = 18
         self.db.add_coins(user_data['id'], coins)
         self.db.add_neons(user_data['id'], neons)
         self.db.add_exp(user_data['id'], exp)
         self.db.add_energy(user_data['id'], energy)
         text = f"""
-{s.header('ЕЖЕДНЕВНЫЙ БОНУС')}
+{s.header('🎁 ЕЖЕДНЕВНЫЙ БОНУС')}
 
-{s.item(f'💰 Монеты: +{coins}')}
-{s.item(f'💜 Неоны: +{neons}')}
-{s.item(f'🔥 Стрик: {streak} дней')}
-{s.item(f'✨ Опыт: +{exp}')}
-{s.item(f'⚡️ Энергия: +{energy}')}
+{s.success('Награда получена!')}
+{s.item(f'💰 +{coins:,} монет')}
+{s.item(f'💜 +{neons} неонов')}
+{s.item(f'✨ +{exp} опыта')}
+{s.item(f'⚡ +{energy} энергии')}
 
-{s.section('НОВЫЙ БАЛАНС')}
-{s.stat('Монеты', f'{user_data["coins"] + coins} 💰')}
-{s.stat('Неоны', f'{user_data["neons"] + neons} 💜')}
+🔥 **Стрик:** {streak} дн. · x{streak_multiplier:.2f}
 
-{s.info('Следующий бонус через 24 часа')}
+{s.section('💼 БАЛАНС')}
+{s.stat('Монеты', f'{user_data["coins"] + coins:,} 💰')}
+{s.stat('Неоны', f'{user_data["neons"] + neons:,} 💜')}
+{s.info('Следующая награда через 24 часа')}
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
         self.db.log_action(user_data['id'], 'daily', f'+{coins}💰 +{neons}💜')
@@ -3535,15 +3583,15 @@ class SpectrumBot:
         last_farm = user_data.get('last_farm')
         if last_farm:
             last = datetime.fromisoformat(last_farm)
-            if (datetime.now() - last).seconds < GLITCH_FARM_COOLDOWN:
-                remain = GLITCH_FARM_COOLDOWN - (datetime.now() - last).seconds
+            if (datetime.now() - last).total_seconds() < GLITCH_FARM_COOLDOWN:
+                remain = GLITCH_FARM_COOLDOWN - (datetime.now() - last).total_seconds()
                 hours = remain // 3600
                 minutes = (remain % 3600) // 60
                 await update.message.reply_text(s.warning(f"Ферма будет доступна через {hours}ч {minutes}м"))
                 return
-        glitches_earned = random.randint(10, 50)
+        glitches_earned = random.randint(20, 40)
         # Антиинфляционный фактор
-        balance_factor = max(0.5, 1.0 - (user_data['glitches'] / MAX_GLITCHES) * 0.5)
+        balance_factor = max(0.60, 1.0 - (user_data['glitches'] / MAX_GLITCHES) * 0.40)
         glitches_earned = int(glitches_earned * balance_factor)
         if self.db.is_vip(user_data['id']):
             glitches_earned = int(glitches_earned * 1.2)
@@ -3589,9 +3637,9 @@ class SpectrumBot:
         if target['id'] == user_data['id']:
             await update.message.reply_text(s.error("Нельзя перевести самому себе"))
             return
-        commission = int(amount * 0.03) if amount < 1000 else int(amount * 0.05)
-        if self.db.is_vip(user_data['id']) or self.db.is_premium(user_data['id']):
-            commission = 0
+        commission = max(1, int(amount * (0.02 if amount < 1000 else 0.05 if amount < 10000 else 0.08)))
+        if self.db.is_premium(user_data['id']): commission = max(1, commission // 2)
+        elif self.db.is_vip(user_data['id']): commission = max(1, int(commission * 0.75))
         total_deduction = amount + commission
         if user_data['neons'] < total_deduction:
             await update.message.reply_text(s.error(f"Недостаточно неонов с учётом комиссии. Нужно {total_deduction} 💜"))
@@ -3610,65 +3658,53 @@ class SpectrumBot:
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
         self.db.log_action(user_data['id'], 'transfer_neons', f"{amount}💜 -> {target['id']}")
 
-    async def cmd_exchange(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def cmd_convert(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
-            await update.message.reply_text(s.error("Укажите количество глитчей для обмена"))
+            await update.message.reply_text(s.error(f"Использование: /convert {NEON_PRICE * 10}"))
             return
-        try:
-            glitches = int(context.args[0])
-        except:
-            await update.message.reply_text(s.error("Количество должно быть числом"))
-            return
-        if glitches < NEON_PRICE:
-            await update.message.reply_text(s.error(f"Минимум для обмена: {NEON_PRICE} глитчей"))
-            return
+        try: glitches = int(context.args[0])
+        except ValueError:
+            await update.message.reply_text(s.error("Количество должно быть числом")); return
+        if glitches < NEON_PRICE or glitches <= 0:
+            await update.message.reply_text(s.error(f"Минимум: {NEON_PRICE} 🖥")); return
         user_data = self.db.get_user(update.effective_user.id)
         if user_data['glitches'] < glitches:
-            await update.message.reply_text(s.error(f"Недостаточно глитчей. Баланс: {user_data['glitches']} 🖥"))
-            return
+            await update.message.reply_text(s.error(f"Недостаточно глитчей. Баланс: {user_data['glitches']:,} 🖥")); return
         neons = glitches // NEON_PRICE
         used_glitches = neons * NEON_PRICE
         remainder = glitches - used_glitches
-        commission = max(1, int(neons * 0.01))
-        neons_after = neons - commission
+        fee = int(neons * 0.05) if neons >= 10 else 0
+        received = neons - fee
         self.db.add_glitches(user_data['id'], -used_glitches)
-        self.db.add_neons(user_data['id'], neons_after)
+        self.db.add_neons(user_data['id'], received)
         text = f"""
-{s.header('💱 ОБМЕН ВАЛЮТ')}
+{s.header('🔄 КОНВЕРТЕР')}
+{s.item(f'Списано: {used_glitches:,} 🖥')}
+{s.item(f'Получено: {received:,} 💜')}
+{s.item(f'Сбор: {fee} 💜 · 5% сжигается')}
+{s.item(f'Остаток: {user_data["glitches"] - used_glitches + remainder:,} 🖥')}
 
-{s.item(f'Обменено: {used_glitches} 🖥 → {neons_after} 💜')}
-{s.item(f'Комиссия биржи: {commission} 💜 (сожжена)')}
-{s.item(f'Остаток глитчей: {user_data["glitches"] - used_glitches + remainder} 🖥')}
-{s.item(f'Новый баланс неонов: {user_data["neons"] + neons_after} 💜')}
-
-{s.success('Обмен выполнен!')}
+{s.success('Обмен завершён')}
+{s.info(f'Курс: {NEON_PRICE} 🖥 → 1 💜')}
         """
-        if remainder > 0:
-            text += f"\n{s.info(f'Остаток {remainder} глитчей не обменян (нужно {NEON_PRICE} для 1 неона)')}"
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     # ===== МАГАЗИН =====
     async def cmd_shop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("❤️ Лечение", callback_data="shop_heal"), InlineKeyboardButton("⚡ Энергия", callback_data="shop_energy")],
+            [InlineKeyboardButton("⚔️ Оружие", callback_data="shop_weapons"), InlineKeyboardButton("💎 VIP/Premium", callback_data="shop_status")],
+            [InlineKeyboardButton("💰 Кошелёк", callback_data="economy_wallet")]
+        ])
         text = f"""
-{s.header('🛍 МАГАЗИН')}
+{s.header('🛍 КИБЕР-МАГАЗИН')}
 
-{s.section('💊 ЗЕЛЬЯ')}
-{s.cmd('buy зелье здоровья', '50 💰 (❤️+30)')}
-{s.cmd('buy большое зелье', '100 💰 (❤️+70)')}
+💰 Все обычные покупки оплачиваются монетами.
+⚔️ Максимальный урон игрока: 100 — бесконечного разгона больше нет.
 
-{s.section('⚔️ ОРУЖИЕ')}
-{s.cmd('buy меч', '200 💰 (⚔️+10)')}
-{s.cmd('buy легендарный меч', '500 💰 (⚔️+30)')}
-
-{s.section('⚡️ ЭНЕРГИЯ')}
-{s.cmd('buy энергетик', '30 💰 (⚡️+20)')}
-{s.cmd('buy батарейка', '80 💰 (⚡️+50)')}
-
-{s.section('💎 ПРИВИЛЕГИИ')}
-{s.cmd('vip', f'VIP ({VIP_PRICE} 💰 / 30 дней)')}
-{s.cmd('premium', f'PREMIUM ({PREMIUM_PRICE} 💰 / 30 дней)')}
+{s.info('Выберите категорию ниже')}
         """
-        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
 
     async def cmd_buy(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
@@ -3697,9 +3733,15 @@ class SpectrumBot:
             new_health = self.db.heal(user_data['id'], item_data['heal'])
             effects.append(f"❤️ Здоровье +{item_data['heal']} (теперь {new_health})")
         if 'damage' in item_data:
-            new_damage = user_data['damage'] + item_data['damage']
+            max_damage = 100
+            actual_gain = min(item_data['damage'], max(0, max_damage - user_data['damage']))
+            if actual_gain <= 0:
+                self.db.add_coins(user_data['id'], item_data['price'])
+                await update.message.reply_text(s.error(f'Достигнут лимит урона: {max_damage}. Монеты возвращены.'), parse_mode=ParseMode.MARKDOWN)
+                return
+            new_damage = user_data['damage'] + actual_gain
             self.db.update_user(user_data['id'], damage=new_damage)
-            effects.append(f"⚔️ Урон +{item_data['damage']} (теперь {new_damage})")
+            effects.append(f"⚔️ Урон +{actual_gain} (теперь {new_damage}/{max_damage})")
         if 'energy' in item_data:
             new_energy = self.db.add_energy(user_data['id'], item_data['energy'])
             effects.append(f"⚡️ Энергия +{item_data['energy']} (теперь {new_energy})")
@@ -3842,6 +3884,8 @@ class SpectrumBot:
         except:
             await update.message.reply_text(s.error("Количество и цена должны быть числами"))
             return
+        if amount <= 0 or price <= 0:
+            await update.message.reply_text(s.error("Количество и цена должны быть больше 0")); return
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         total_cost = amount * price
@@ -3864,6 +3908,8 @@ class SpectrumBot:
         except:
             await update.message.reply_text(s.error("Количество и цена должны быть числами"))
             return
+        if amount <= 0 or price <= 0:
+            await update.message.reply_text(s.error("Количество и цена должны быть больше 0")); return
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         if user_data['neons'] < amount:
@@ -8769,6 +8815,78 @@ class SpectrumBot:
         user = query.from_user
         user_data = self.db.get_user(user.id)
 
+        if data == "economy_wallet":
+            u = self.db.get_user(user.id); eco = self.db.economy_summary(u['id'], 7)
+            text = f"{s.header('💼 КОШЕЛЁК')}\n\n💰 **{u['coins']:,}** 💰\n💜 **{u['neons']:,}** 💜\n🖥 **{u['glitches']:,}** 🖥\n\n🔥 Стрик: {u['daily_streak']} дн."
+            kb = InlineKeyboardMarkup([[InlineKeyboardButton('🛍 Магазин', callback_data='shop_menu'), InlineKeyboardButton('💱 Биржа', callback_data='exchange_menu')],[InlineKeyboardButton('🎁 Daily', callback_data='economy_daily_info')]])
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
+        elif data == "economy_stats":
+            eco = self.db.economy_summary(user_data['id'], 7)
+            text = f"{s.header('📊 ЭКОНОМИКА · 7 ДНЕЙ')}\n\n💰 +{eco['coins_earned']:,} / −{eco['coins_spent']:,}\n💜 +{eco['neons_earned']:,} / −{eco['neons_spent']:,}\n🖥 +{eco['glitches_earned']:,} / −{eco['glitches_spent']:,}"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "economy_daily_info":
+            text = f"{s.header('🎁 DAILY')}\n\n🔥 Стрик даёт до +50%.\n💎 VIP: +20%. Premium: +35%.\n💰 База: 180–260 монет и 1–2 неона.\n\nКоманда: /daily"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "shop_menu":
+            kb = InlineKeyboardMarkup([[InlineKeyboardButton('❤️ Лечение', callback_data='shop_heal'), InlineKeyboardButton('⚡ Энергия', callback_data='shop_energy')],[InlineKeyboardButton('⚔️ Оружие', callback_data='shop_weapons'), InlineKeyboardButton('💎 Статусы', callback_data='shop_status')],[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]])
+            await query.edit_message_text(f"{s.header('🛍 МАГАЗИН')}\n\nВыберите категорию:", parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
+        elif data == "shop_heal":
+            text = f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n🧪 Зелье — 50 💰 → +30 HP\n🧪 Большое зелье — 100 💰 → +70 HP"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "shop_energy":
+            text = f"{s.header('⚡ ЭНЕРГИЯ')}\n\n🥤 Энергетик — 30 💰 → +20 энергии\n🔋 Батарейка — 80 💰 → +50 энергии"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "shop_weapons":
+            text = f"{s.header('⚔️ ОРУЖИЕ')}\n\n🗡 Меч — 200 💰 → +10 урона\n⚔️ Легендарный — 500 💰 → +30 урона\n\nЛимит урона: 100."
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "shop_status":
+            text = f"{s.header('💎 СТАТУСЫ')}\n\nVIP — {VIP_PRICE:,} 💰 / {VIP_DAYS} дней\nPremium — {PREMIUM_PRICE:,} 💰 / {PREMIUM_DAYS} дней"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "exchange_menu":
+            stats = self.db.get_exchange_stats()
+            text = f"{s.header('💱 БИРЖА')}\n\nКурс: **{stats['price']} 💰 / 💜**\nОбъём 24ч: {stats['volume_24h']:,} 💰\nАктивных ордеров: {stats['active_orders']}\n\n/convert 150 — прямой обмен 🖥 → 💜\n/buyorder 100 10 — купить\n/sellorder 100 10 — продать"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_profile":
+            u = self.db.get_user(user.id)
+            text = f"{s.header('👤 ПРОФИЛЬ')}\n\n**{u.get('nickname') or user.first_name}**\nУровень: {u['level']}\nОпыт: {u['exp']}\nРепутация: {u['reputation']}\nРейтинг дуэлей: {u['duel_rating']}\nАчивки: {len(self.db.get_user_achievements(u['id']))}"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_games":
+            text = f"{s.header('🎮 ИГРЫ')}\n\n🎲 /dice — кости\n✊ /rps — КНБ\n🎰 /slots — слоты\n🔴 /roulette — рулетка\n💣 /saper — сапёр\n⚔️ /duel — дуэль\n🎭 /mafia — мафия"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_quests":
+            quests = self.db.get_user_quests(user_data['id'])
+            text = f"{s.header('🎯 КВЕСТЫ')}\n\n"
+            if quests:
+                for q in quests[:3]:
+                    text += f"**{q['name']}**\n{q['description']}\n{s.progress(q['progress'], q['condition_value'], 10)}\n\n"
+            else:
+                text += 'Активных квестов нет. Откройте /quests.'
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_top":
+            rows = self.db.get_top('coins', 5)
+            text = f"{s.header('🏆 ТОП ПО МОНЕТАМ')}\n\n"
+            for i, row in enumerate(rows, 1):
+                name = row[1] or row[0] or 'Игрок'
+                text += f"{i}. {name} — {row[2]:,} 💰\n"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_stats":
+            u = self.db.get_user(user.id)
+            text = f"{s.header('📊 МОЯ СТАТИСТИКА')}\n\n💬 Сообщений: {u['messages_count']:,}\n🎮 Команд: {u['commands_used']:,}\n⚔️ Побед в дуэлях: {u['duel_wins']:,}\n👾 Боссов: {u['boss_kills']:,}\n🏆 Рейтинг: {u['duel_rating']}"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
         if data == "random_chat":
             self.db.cursor.execute("SELECT chat_id, chat_name FROM chat_settings WHERE chat_code IS NOT NULL ORDER BY RANDOM() LIMIT 1")
             row = self.db.cursor.fetchone()
@@ -9448,7 +9566,7 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
         self.app.add_handler(CommandHandler("glitches", self.cmd_glitches))
         self.app.add_handler(CommandHandler("farm", self.cmd_farm))
         self.app.add_handler(CommandHandler("transfer", self.cmd_transfer_neons))
-        self.app.add_handler(CommandHandler("exchange", self.cmd_exchange))
+        self.app.add_handler(CommandHandler("convert", self.cmd_convert))
 
         # ===== КВЕСТЫ И БИРЖА =====
         self.app.add_handler(CommandHandler("quests", self.cmd_quests))
