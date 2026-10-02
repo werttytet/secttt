@@ -190,16 +190,18 @@ class ChartGenerator:
 
 # ========== УЛУЧШЕННЫЙ ДИЗАЙН (НОВЫЙ STYLE) ==========
 class Style:
-    SEPARATOR = "▰" * 24
-    SEPARATOR_BOLD = "▰" * 28
+    # Единый визуальный стиль. Текст команд/сообщений не меняется — меняется только подача.
+    SEPARATOR = "━━━━━━━━━━━━━━━━━━━━"
+    SEPARATOR_LIGHT = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+    SEPARATOR_BOLD = "━━━━━━━━━━━━━━━━━━━━━━━━"
     
     @classmethod
     def header(cls, title: str, emoji: str = "⚜️") -> str:
-        return f"\n{emoji}{emoji} **{title.upper()}** {emoji}{emoji}\n`{cls.SEPARATOR_BOLD}`\n"
+        return f"\n{emoji} **{title.upper()}**\n`{cls.SEPARATOR_BOLD}`\n"
     
     @classmethod
     def section(cls, title: str, emoji: str = "📌") -> str:
-        return f"\n{emoji} **{title}**\n`{cls.SEPARATOR}`\n"
+        return f"\n{emoji} **{title}**\n`{cls.SEPARATOR_LIGHT}`\n"
     
     @classmethod
     def cmd(cls, cmd: str, desc: str, usage: str = "") -> str:
@@ -2297,10 +2299,10 @@ class GroqAI:
             if now - self.user_last_ai[user_id] < self.ai_cooldown:
                 return None
         
-        self.user_last_ai[user_id] = now
-        
+        # Не блокируем пользователя кулдауном, пока запрос ещё не завершился.
+        # В старой версии timestamp записывался ДО API-запроса: при ошибке Groq
+        # пользователь получал тишину и затем ещё ждал кулдаун.
         try:
-            loop = asyncio.get_event_loop()
             system_prompt = self.chat_prompts[chat_id] if chat_id else self.base_system_prompt
             context = list(self.contexts[user_id])
             context_str = "\n".join(context) if context else "Нет истории"
@@ -2316,19 +2318,38 @@ class GroqAI:
                     messages=messages,
                     temperature=0.8,
                     max_tokens=200,
-                    top_p=0.95
+                    top_p=0.95,
+                    timeout=30.0
                 )
-            chat_completion = await loop.run_in_executor(None, sync_request)
-            response = chat_completion.choices[0].message.content
+
+            # Синхронный Groq-клиент не должен блокировать event loop Telegram.
+            loop = asyncio.get_running_loop()
+            chat_completion = await asyncio.wait_for(
+                loop.run_in_executor(None, sync_request),
+                timeout=35.0
+            )
+
+            if not chat_completion or not getattr(chat_completion, "choices", None):
+                raise RuntimeError("Groq вернул пустой ответ без choices")
+
+            response = getattr(chat_completion.choices[0].message, "content", None)
+            if not response:
+                raise RuntimeError("Groq вернул пустой content")
+
+            response = str(response).strip()
             self.contexts[user_id].append(f"User: {message}")
             self.contexts[user_id].append(f"AI: {response}")
             if response.startswith("Спектр:"):
                 response = response[7:].strip()
             elif response.startswith("Спектр "):
                 response = response[6:].strip()
-            return response
+
+            # Кулдаун начинается только после успешного ответа.
+            self.user_last_ai[user_id] = time.time()
+            return response or "Я получил сообщение, но не смог сформировать ответ."
         except Exception as e:
-            logger.error(f"Groq error: {e}")
+            # При ошибке timestamp НЕ ставим — пользователь может повторить запрос.
+            logger.exception(f"Groq error: {e}")
             return None
 
     async def get_game_response(self, user_id: int, game_type: str, game_state: Dict, 
@@ -8732,11 +8753,25 @@ class SpectrumBot:
                     chat_id=chat.id
                 )
                 if response:
-                    await update.message.reply_text(response)
+                    # Без ParseMode: AI может вернуть Markdown/символы, которые
+                    # Telegram отвергнет при разборе форматирования.
+                    await update.message.reply_text(response, disable_web_page_preview=True)
                     self.db.update_quest_progress(user_data['id'], 'ai_interactions', 1)
                     return
+
+                # Пользователь уже видит typing, поэтому при ошибке обязательно
+                # отправляем понятное сообщение вместо вечного "печатает...".
+                await update.message.reply_text(
+                    "⚠️ Спектр временно не смог получить ответ от AI. Попробуйте ещё раз через несколько секунд."
+                )
             except Exception as e:
-                logger.error(f"AI response error: {e}")
+                logger.exception(f"AI response error: {e}")
+                try:
+                    await update.message.reply_text(
+                        "⚠️ Не удалось отправить ответ AI. Проверьте GROQ_API_KEY и соединение с API."
+                    )
+                except Exception:
+                    pass
 
     async def handle_left_member(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         member = update.message.left_chat_member
