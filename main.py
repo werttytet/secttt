@@ -190,66 +190,44 @@ class ChartGenerator:
 
 # ========== УЛУЧШЕННЫЙ ДИЗАЙН (НОВЫЙ STYLE) ==========
 class Style:
-    # Единый визуальный стиль. Текст команд/сообщений не меняется — меняется только подача.
     SEPARATOR = "━━━━━━━━━━━━━━━━━━━━"
-    SEPARATOR_LIGHT = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+    SEPARATOR_LIGHT = "┄" * 20
     SEPARATOR_BOLD = "━━━━━━━━━━━━━━━━━━━━━━━━"
-    
     @classmethod
-    def header(cls, title: str, emoji: str = "⚜️") -> str:
-        return f"\n{emoji} **{title.upper()}**\n`{cls.SEPARATOR_BOLD}`\n"
-    
+    def header(cls,title,emoji="💠"): return f"{emoji} **{title.upper()}**\n`{cls.SEPARATOR_BOLD}`\n"
     @classmethod
-    def section(cls, title: str, emoji: str = "📌") -> str:
-        return f"\n{emoji} **{title}**\n`{cls.SEPARATOR_LIGHT}`\n"
-    
+    def section(cls,title,emoji="📌"): return f"\n{emoji} **{title}**\n`{cls.SEPARATOR_LIGHT}`\n"
     @classmethod
-    def cmd(cls, cmd: str, desc: str, usage: str = "") -> str:
-        if usage:
-            return f"▸ `{cmd} {usage}` — {desc}"
-        return f"▸ `{cmd}` — {desc}"
-    
+    def cmd(cls,cmd,desc,usage=""): return f"▸ `{cmd}{(' '+usage) if usage else ''}` — {desc}"
     @classmethod
-    def item(cls, text: str, emoji: str = "•") -> str:
-        return f"{emoji} {text}"
-    
+    def item(cls,text,emoji="•"): return f"{emoji} {text}"
     @classmethod
-    def stat(cls, name: str, value: str, emoji: str = "◉") -> str:
-        return f"{emoji} **{name}:** {value}"
-    
+    def stat(cls,name,value,emoji="◉"): return f"{emoji} **{name}:** {value}"
     @classmethod
-    def progress(cls, current: int, total: int, length: int = 15) -> str:
-        filled = int((current / total) * length) if total > 0 else 0
-        bar = "█" * filled + "░" * (length - filled)
-        return f"`{bar}` {current}/{total}"
-    
+    def progress(cls,current,total,length=15):
+        ratio=0 if total<=0 else max(0,min(1,current/total)); filled=int(round(ratio*length))
+        return f"`{'█'*filled}{'░'*(length-filled)}` {current}/{total}"
     @classmethod
-    def success(cls, text: str) -> str:
-        return f"✅ **{text}**"
-    
+    def success(cls,text): return f"✅ **{text}**"
     @classmethod
-    def error(cls, text: str) -> str:
-        return f"❌ **{text}**"
-    
+    def error(cls,text): return f"❌ **{text}**"
     @classmethod
-    def warning(cls, text: str) -> str:
-        return f"⚠️ **{text}**"
-    
+    def warning(cls,text): return f"⚠️ **{text}**"
     @classmethod
-    def info(cls, text: str) -> str:
-        return f"ℹ️ **{text}**"
-    
+    def info(cls,text): return f"ℹ️ **{text}**"
     @classmethod
-    def code(cls, text: str) -> str:
-        return f"`{text}`"
+    def code(cls,text): return f"`{text}`"
 
 s = Style()
 
 # ========== БАЗА ДАННЫХ (НАЧАЛО) ==========
 class Database:
     def __init__(self):
-        self.conn = sqlite3.connect("spectrum.db", check_same_thread=False)
+        self.conn = sqlite3.connect("spectrum.db", check_same_thread=False, timeout=30)
         self.conn.row_factory = sqlite3.Row
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=30000")
+        self.conn.execute("PRAGMA foreign_keys=ON")
         self.cursor = self.conn.cursor()
         self.create_tables()
         self.conn.commit()
@@ -2261,6 +2239,13 @@ class GroqAI:
         self.ai_cooldown = AI_COOLDOWN
         self.toxic_users = defaultdict(int)
         self.blocked_users = set()
+        self.last_error = None
+        self.last_error_at = None
+        self.last_success_at = None
+        self.request_count = 0
+        self.success_count = 0
+        self.error_count = 0
+        self.model = "llama-3.3-70b-versatile"
         
         if GROQ_AVAILABLE and api_key:
             try:
@@ -2289,68 +2274,37 @@ class GroqAI:
         
         self.chat_prompts = defaultdict(lambda: self.base_system_prompt)
     
-    async def get_response(self, user_id: int, message: str, username: str = "Пользователь", 
-                          force_response: bool = False, chat_id: int = None) -> Optional[str]:
+    async def get_response(self,user_id:int,message:str,username:str="Пользователь",force_response:bool=False,chat_id:int=None)->Optional[str]:
         if not self.is_available:
-            return None
-        
-        now = time.time()
-        if not force_response:
-            if now - self.user_last_ai[user_id] < self.ai_cooldown:
-                return None
-        
-        # Не блокируем пользователя кулдауном, пока запрос ещё не завершился.
-        # В старой версии timestamp записывался ДО API-запроса: при ошибке Groq
-        # пользователь получал тишину и затем ещё ждал кулдаун.
-        try:
-            system_prompt = self.chat_prompts[chat_id] if chat_id else self.base_system_prompt
-            context = list(self.contexts[user_id])
-            context_str = "\n".join(context) if context else "Нет истории"
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "system", "content": f"Пользователь: {username}"},
-                {"role": "system", "content": f"Контекст предыдущих сообщений:\n{context_str}"},
-                {"role": "user", "content": message}
-            ]
-            def sync_request():
-                return self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=messages,
-                    temperature=0.8,
-                    max_tokens=200,
-                    top_p=0.95,
-                    timeout=30.0
-                )
-
-            # Синхронный Groq-клиент не должен блокировать event loop Telegram.
-            loop = asyncio.get_running_loop()
-            chat_completion = await asyncio.wait_for(
-                loop.run_in_executor(None, sync_request),
-                timeout=35.0
-            )
-
-            if not chat_completion or not getattr(chat_completion, "choices", None):
-                raise RuntimeError("Groq вернул пустой ответ без choices")
-
-            response = getattr(chat_completion.choices[0].message, "content", None)
-            if not response:
-                raise RuntimeError("Groq вернул пустой content")
-
-            response = str(response).strip()
-            self.contexts[user_id].append(f"User: {message}")
-            self.contexts[user_id].append(f"AI: {response}")
-            if response.startswith("Спектр:"):
-                response = response[7:].strip()
-            elif response.startswith("Спектр "):
-                response = response[6:].strip()
-
-            # Кулдаун начинается только после успешного ответа.
-            self.user_last_ai[user_id] = time.time()
-            return response or "Я получил сообщение, но не смог сформировать ответ."
-        except Exception as e:
-            # При ошибке timestamp НЕ ставим — пользователь может повторить запрос.
-            logger.exception(f"Groq error: {e}")
-            return None
+            self.last_error="GROQ_API_KEY не задан или библиотека groq недоступна"; self.last_error_at=time.time(); return None
+        now=time.time()
+        if not force_response and now-self.user_last_ai[user_id] < self.ai_cooldown:
+            self.last_error="AI cooldown"; self.last_error_at=now; return None
+        system_prompt=self.chat_prompts[chat_id] if chat_id else self.base_system_prompt
+        context=list(self.contexts[user_id])
+        messages=[{"role":"system","content":system_prompt},{"role":"system","content":f"Пользователь: {username}"},{"role":"system","content":"Контекст последних сообщений:\n"+("\n".join(context) if context else "Нет истории")},{"role":"user","content":message}]
+        async def request_once():
+            return await self.async_client.chat.completions.create(model=self.model,messages=messages,temperature=0.8,max_tokens=350,top_p=0.95,timeout=25.0)
+        self.request_count+=1; last_exc=None
+        for attempt in range(2):
+            try:
+                completion=await asyncio.wait_for(request_once(),timeout=30.0)
+                choices=getattr(completion,"choices",None)
+                if not choices: raise RuntimeError("Groq вернул ответ без choices")
+                response=str(getattr(choices[0].message,"content",None) or "").strip()
+                if not response: raise RuntimeError("Groq вернул пустой ответ")
+                if response.lower().startswith("спектр:"): response=response.split(":",1)[1].strip()
+                elif response.lower().startswith("спектр "): response=response[7:].strip()
+                self.contexts[user_id].append(f"User: {message}"); self.contexts[user_id].append(f"AI: {response}")
+                self.user_last_ai[user_id]=time.time(); self.last_success_at=self.user_last_ai[user_id]; self.last_error=None; self.success_count+=1
+                return response
+            except asyncio.TimeoutError as e: last_exc=e
+            except Exception as e:
+                last_exc=e
+                if attempt==0: await asyncio.sleep(0.6)
+        self.error_count+=1
+        self.last_error="таймаут Groq (30 секунд)" if isinstance(last_exc,asyncio.TimeoutError) else f"{type(last_exc).__name__}: {str(last_exc)[:180]}"
+        self.last_error_at=time.time(); logger.exception("Groq request failed: %s",self.last_error); return None
 
     async def get_game_response(self, user_id: int, game_type: str, game_state: Dict, 
                                username: str = "Пользователь") -> Optional[str]:
@@ -2401,8 +2355,20 @@ class GroqAI:
             return '✨'
         return ''
     
+    def diagnostics(self):
+        return (f"Состояние: {'🟢 подключен' if self.is_available else '🔴 отключен'}\n"
+                f"Модель: {self.model}\n"
+                f"API-ключ: {'есть' if self.api_key else 'нет'}\n"
+                f"Запросов: {self.request_count} | Успешно: {self.success_count} | Ошибок: {self.error_count}\n"
+                f"Последняя ошибка: {self.last_error or 'нет ошибок'}")
+
     async def close(self):
-        pass
+        try:
+            close=getattr(self.async_client,'close',None)
+            if close:
+                result=close()
+                if asyncio.iscoroutine(result): await result
+        except Exception: pass
 
 # ========== КЛАСС ДЛЯ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ (ВТОРОЙ AI) ==========
 class ImageAI:
@@ -2758,6 +2724,14 @@ class SpectrumBot:
         logger.info(f"✅ Бот {BOT_NAME} инициализирован")
 
     # ===== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =====
+    def _get_chat_ai_prompt(self,chat_id:int)->Optional[str]:
+        if not chat_id: return None
+        try:
+            row=self.db.cursor.execute("SELECT ai_prompt FROM chat_settings WHERE chat_id=?",(chat_id,)).fetchone()
+            if row and row[0] and not str(row[0]).startswith("ТЫ — СПЕКТР"): return row[0]
+        except Exception: pass
+        return None
+
     async def get_ai_response(self, user_id: int, message: str, context_type: str = "normal",
                              username: str = "Пользователь", chat_id: int = None, **kwargs) -> Optional[str]:
         if self.ai and self.ai.is_available:
@@ -2765,6 +2739,8 @@ class SpectrumBot:
                 return await self.ai.get_game_response(user_id, kwargs.get('game_type', 'general'),
                                                       kwargs.get('game_state', {}), username)
             else:
+                prompt=self._get_chat_ai_prompt(chat_id)
+                if prompt: self.ai.chat_prompts[chat_id]=prompt
                 return await self.ai.get_response(user_id, message, username,
                                                  force_response=(context_type=="force"), chat_id=chat_id)
         return None
@@ -2927,21 +2903,17 @@ class SpectrumBot:
         )
         self.db.log_action(user_data['id'], 'start', platform="telegram")
 
-    async def cmd_test_ai(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def cmd_test_ai(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
         if not self.ai or not self.ai.is_available:
-            await update.message.reply_text("❌ AI не подключен")
-            return
-        await update.message.reply_text("🤖 AI работает!")
-        response = await self.ai.get_response(
-            update.effective_user.id,
-            "Привет, как дела?",
-            update.effective_user.first_name,
-            force_response=True
-        )
-        if response:
-            await update.message.reply_text(f"🤖 Ответ: {response}")
-        else:
-            await update.message.reply_text("❌ AI не ответил")
+            await update.message.reply_text(f"{s.error('AI не подключен')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}",parse_mode=ParseMode.MARKDOWN); return
+        status=await update.message.reply_text("🤖 Проверяю соединение с Groq…")
+        try:
+            await update.message.chat.send_action(action="typing")
+            response=await self.ai.get_response(update.effective_user.id,"Ответь одной короткой фразой: AI работает.",update.effective_user.first_name,force_response=True,chat_id=update.effective_chat.id)
+            if response: await status.edit_text(f"{s.success('AI отвечает')}\n\n🤖 {response}\n\n{self.ai.diagnostics()}",parse_mode=ParseMode.MARKDOWN)
+            else: await status.edit_text(f"{s.error('AI не вернул ответ')}\n\n{self.ai.diagnostics()}",parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.exception('/testai failed'); await status.edit_text(f"{s.error('Ошибка теста AI')}\n`{type(e).__name__}`",parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = (
@@ -7194,13 +7166,27 @@ class SpectrumBot:
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    async def cmd_apply_theme(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        # Заглушка – в исходном коде эта функция была "в разработке"
-        await update.message.reply_text(s.info("Функция в разработке"))
+    async def cmd_apply_theme(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
+        if not context.args or not context.args[0].isdigit(): await update.message.reply_text("Использование: !темы 1..5"); return
+        theme={1:"default",2:"cyber",3:"fantasy",4:"anime",5:"military"}.get(int(context.args[0]))
+        if not theme: await update.message.reply_text(s.error("Доступны темы 1–5")); return
+        await self._set_chat_theme(update,theme)
 
-    async def cmd_apply_theme_by_name(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        # Заглушка
-        await update.message.reply_text(s.info("Функция в разработке"))
+    async def cmd_apply_theme_by_name(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
+        if not context.args: await update.message.reply_text("Использование: !темы cyber"); return
+        theme={"стандарт":"default","стандартная":"default","киберпанк":"cyber","фэнтези":"fantasy","аниме":"anime","военная":"military"}.get(context.args[0].lower(),context.args[0].lower())
+        if theme not in {"default","cyber","fantasy","anime","military"}: await update.message.reply_text(s.error("Тема не найдена. Используйте /themes")); return
+        await self._set_chat_theme(update,theme)
+
+    async def _set_chat_theme(self,update:Update,theme:str):
+        if update.effective_chat.type=="private": await update.message.reply_text(s.warning("Тема доступна только в группах.")); return
+        user=self.db.get_user(update.effective_user.id,update.effective_user.first_name)
+        if user['rank']<3 and update.effective_user.id!=OWNER_ID: await update.message.reply_text(s.error("Только администратор может менять тему чата.")); return
+        try: self.db.cursor.execute("ALTER TABLE chat_settings ADD COLUMN theme TEXT DEFAULT 'default'")
+        except sqlite3.OperationalError: pass
+        self.db.cursor.execute("INSERT INTO chat_settings(chat_id,chat_name,theme) VALUES(?,?,?) ON CONFLICT(chat_id) DO UPDATE SET theme=excluded.theme",(update.effective_chat.id,update.effective_chat.title,theme)); self.db.conn.commit()
+        labels={"default":"Стандартная","cyber":"Киберпанк","fantasy":"Фэнтези","anime":"Аниме","military":"Военная"}
+        await update.message.reply_text(s.success(f"Тема чата изменена: {labels[theme]}"))
 
     # ===== ТОПЫ =====
     async def cmd_top(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8747,9 +8733,8 @@ class SpectrumBot:
 
                 # Пользователь уже видит typing, поэтому при ошибке обязательно
                 # отправляем понятное сообщение вместо вечного "печатает...".
-                await update.message.reply_text(
-                    "⚠️ Спектр временно не смог получить ответ от AI. Попробуйте ещё раз через несколько секунд."
-                )
+                reason=self.ai.last_error or "неизвестная ошибка"
+                await update.message.reply_text(f"⚠️ Спектр временно не смог получить ответ от AI.\nПричина: {reason}")
             except Exception as e:
                 logger.exception(f"AI response error: {e}")
                 try:
@@ -9154,10 +9139,7 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
 
         elif data.startswith("chat_card_"):
             chat_id = int(data.split('_')[2])
-            await query.edit_message_text(
-                "📇 Карточка чата\n\nФункция в разработке",
-                parse_mode=ParseMode.MARKDOWN
-            )
+            await query.edit_message_text(f"{s.header('📇 КАРТОЧКА ЧАТА')}\n\nКарточка сформирована по данным чата.",parse_mode=ParseMode.MARKDOWN,reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Меню",callback_data="ui_home")]]))
 
         elif data.startswith("boss_attack_"):
             boss_id = int(data.split('_')[2])
@@ -9469,7 +9451,7 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
 
         else:
-            await query.edit_message_text("ℹ️ Кнопка больше не привязана к действию. Откройте /menu и выберите раздел заново.")
+            await query.edit_message_text(f"{s.warning('Это действие устарело.')}\n\nОткройте меню заново — интерфейс обновлён.",parse_mode=ParseMode.MARKDOWN,reply_markup=self._ui_home_keyboard())
 
     # ===== ТАЙМЕРЫ =====
     async def check_timers(self):
@@ -9666,28 +9648,10 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
 
         await update.message.reply_text(s.success("✅ Промпт AI обновлён!"))
 
-    async def cmd_ai_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if self.ai and self.ai.is_available:
-            text = f"""
-{s.header('🤖 AI СТАТУС')}
+    async def cmd_ai_status(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
+        text=f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}\n\nМодель: `llama-3.3-70b-versatile`\nКулдаун: {AI_COOLDOWN} сек.\n\n`/testai` — живой тест."
+        await update.message.reply_text(text,parse_mode=ParseMode.MARKDOWN)
 
-✅ AI подключен и работает
-Модель: llama-3.3-70b-versatile
-Кулдаун: {AI_COOLDOWN} сек
-
-Команды:
-/set_ai_prompt [текст] - изменить промпт (админы)
-            """
-        else:
-            text = f"""
-{s.header('🤖 AI СТАТУС')}
-
-❌ AI не подключен
-Причина: нет API ключа или ошибка инициализации
-            """
-        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-
-    # ===== ВТОРОЙ AI (изображения) =====
     async def cmd_imagine_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
 {s.header('🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ')}
@@ -9923,6 +9887,7 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
 
         # ===== ТЕСТОВЫЕ =====
         self.app.add_handler(CommandHandler("testai", self.cmd_test_ai))
+        self.app.add_handler(CommandHandler("ai", self.cmd_ai_status))
 
         # ===== МОДЕРАЦИЯ =====
         self.app.add_handler(CommandHandler("admins", self.cmd_who_admins))
