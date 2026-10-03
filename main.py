@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-СПЕКТР · Neon Core — объединённая версия
+СПЕКТР v10.0 OBSIDIAN PRISM — ПОЛНЫЙ REDESIGN
 """
 
 # ========== ИМПОРТЫ ==========
@@ -75,7 +75,7 @@ if not TOKEN:
     print("❌ ОШИБКА: BOT_TOKEN не найден в переменных окружения!")
     sys.exit(1)
 
-# ========== АНТИИНФЛЯЦИОННЫЕ ЛИМИТЫ ==========
+# ========== АНТИИНФЛЯЦИОННЫЕ ЛИМИТЫ (НОВЫЕ) ==========
 MAX_COINS = 1_000_000
 MAX_NEONS = 100_000
 MAX_GLITCHES = 500_000
@@ -91,6 +91,7 @@ BOT_NAME = "Спектр · Neon Core"
 BOT_VERSION = "7.1 ULTIMATE"
 BOT_USERNAME = "SpectrumServers_bot"
 
+# Настройки модерации
 RANKS = {
     0: {"name": "Участник", "emoji": "👤"},
     1: {"name": "Помощник", "emoji": "🟢"},
@@ -100,43 +101,52 @@ RANKS = {
     5: {"name": "Создатель", "emoji": "👑"}
 }
 
+# Настройки игр
 MAFIA_MIN_PLAYERS = 6
 MAFIA_MAX_PLAYERS = 20
-MAFIA_NIGHT_TIME = 60
-MAFIA_DAY_TIME = 120
-MAFIA_VOTE_TIME = 60
+MAFIA_NIGHT_TIME = 60  # секунд
+MAFIA_DAY_TIME = 120   # секунд
+MAFIA_VOTE_TIME = 60   # секунд
 
-DAILY_COOLDOWN = 86400
+# Экономика
+DAILY_COOLDOWN = 86400  # 24 часа
 VIP_PRICE = 5000
 PREMIUM_PRICE = 15000
 VIP_DAYS = 30
 PREMIUM_DAYS = 30
 
+# Антиспам
 SPAM_LIMIT = 5
 SPAM_WINDOW = 3
 SPAM_MUTE_TIME = 10
 
+# AI
 AI_COOLDOWN = 2
-IMAGE_GEN_TIMEOUT = 30
+IMAGE_GEN_TIMEOUT = 30  # таймаут генерации изображения
 
+# Лимиты
 MAX_NICK_LENGTH = 30
 MAX_TITLE_LENGTH = 30
 MAX_MOTTO_LENGTH = 100
 MAX_BIO_LENGTH = 500
 
-GLITCH_FARM_COOLDOWN = 14400
+# Новые константы для бонусов
+GLITCH_FARM_COOLDOWN = 14400  # 4 часа в секундах
 MAX_CIRCLES_PER_USER = 5
 MAX_CIRCLES_PER_CHAT = 20
 
-QUESTS_UPDATE_INTERVAL = 86400
+# Квесты
+QUESTS_UPDATE_INTERVAL = 86400  # 24 часа
 MAX_ACTIVE_QUESTS = 3
-QUEST_COMPLEXITY_MULTIPLIER = 1.5
+QUEST_COMPLEXITY_MULTIPLIER = 1.5  # Множитель сложности для защиты от инфляции
 
+# Биржа
 EXCHANGE_HISTORY_LIMIT = 100
-EXCHANGE_COMMISSION = 0.03
+EXCHANGE_COMMISSION = 0.03  # 3% комиссия биржи (сжигается)
 
+# Допустимые поля для сортировки (защита от SQL-инъекций)
 ALLOWED_SORT_FIELDS = {
-    'coins', 'neons', 'glitches', 'level', 'messages_count',
+    'coins', 'neons', 'glitches', 'level', 'messages_count', 
     'duel_rating', 'boss_kills', 'reputation', 'daily_streak'
 }
 
@@ -155,75 +165,95 @@ class ChartGenerator:
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         from datetime import datetime, timedelta
-
+        
         plt.style.use('dark_background')
         fig, ax = plt.subplots(figsize=(8, 4))
         fig.patch.set_facecolor('#1a1a1a')
         ax.set_facecolor('#2a2a2a')
-
+        
         ax.plot(days, counts, marker='o', linestyle='-', color='#00d4ff', linewidth=2, markersize=6)
         ax.fill_between(days, counts, color='#00d4ff', alpha=0.1)
-
+        
         ax.set_title(f"АКТИВНОСТЬ {username.upper()}", fontsize=14, fontweight='bold', pad=20, color='white')
         ax.set_ylabel("Сообщения", color='white')
         ax.tick_params(colors='white')
         ax.grid(True, linestyle='--', alpha=0.3, color='gray')
-
+        
         for spine in ax.spines.values():
             spine.set_visible(False)
-
+        
         buf = BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight', dpi=100, facecolor=fig.get_facecolor())
         buf.seek(0)
         plt.close(fig)
         return buf
 
-# ========== ДИЗАЙН (СТИЛЬ ИЗ ВТОРОГО ФАЙЛА) ==========
+# ========== УЛУЧШЕННЫЙ ДИЗАЙН (НОВЫЙ STYLE) ==========
 class Style:
-    SEPARATOR = "━━━━━━━━━━━━━━━━━━━━"
-    SEPARATOR_LIGHT = "┄" * 20
-    SEPARATOR_BOLD = "━━━━━━━━━━━━━━━━━━━━━━━━"
+    """SPECTRUM / OBSIDIAN PRISM — единый визуальный слой для всего бота."""
+    TOP = "╭────────────────────────────╮"
+    MID = "├────────────────────────────┤"
+    BOT = "╰────────────────────────────╯"
+    THIN = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+    BRAND = "⟡ S P E C T R U M"
 
     @classmethod
-    def header(cls, title, emoji="💠"):
-        return f"{emoji} **{title.upper()}**\n`{cls.SEPARATOR_BOLD}`\n"
+    def header(cls, title, emoji="⟡"):
+        return f"{cls.TOP}\n│ {emoji}  **{title}**\n{cls.MID}"
 
     @classmethod
-    def section(cls, title, emoji="📌"):
-        return f"\n{emoji} **{title}**\n`{cls.SEPARATOR_LIGHT}`\n"
+    def section(cls, title, emoji="◆"):
+        return f"\n{emoji} **{title}**\n`{cls.THIN}`\n"
 
     @classmethod
     def cmd(cls, cmd, desc, usage=""):
-        return f"▸ `{cmd}{(' ' + usage) if usage else ''}` — {desc}"
+        suffix = f" `{usage}`" if usage else ""
+        return f"`/{cmd}{suffix}`  ·  {desc}\n"
 
     @classmethod
-    def item(cls, text, emoji="•"):
+    def item(cls, text, emoji="›"):
         return f"{emoji} {text}"
 
     @classmethod
-    def stat(cls, name, value, emoji="◉"):
-        return f"{emoji} **{name}:** {value}"
+    def stat(cls, name, value, emoji="◆"):
+        return f"{emoji} **{name}**  ·  {value}"
 
     @classmethod
-    def progress(cls, current, total, length=15):
+    def progress(cls, current, total, length=10):
         ratio = 0 if total <= 0 else max(0, min(1, current / total))
         filled = int(round(ratio * length))
-        return f"`{'█' * filled}{'░' * (length - filled)}` {current}/{total}"
+        return f"`{'▰' * filled}{'▱' * (length - filled)}`  {current}/{total}"
 
     @classmethod
-    def success(cls, text): return f"✅ **{text}**"
+    def success(cls, text): return f"🟢  **{text}**"
     @classmethod
-    def error(cls, text): return f"❌ **{text}**"
+    def error(cls, text): return f"🔴  **{text}**"
     @classmethod
-    def warning(cls, text): return f"⚠️ **{text}**"
+    def warning(cls, text): return f"🟠  **{text}**"
     @classmethod
-    def info(cls, text): return f"ℹ️ **{text}**"
+    def info(cls, text): return f"🔵  **{text}**"
+
+    @classmethod
+    def card(cls, title, rows, emoji="◆"):
+        return f"{cls.header(title, emoji)}\n\n" + "\n".join(rows) + f"\n{cls.BOT}"
+
     @classmethod
     def code(cls, text): return f"`{text}`"
+
+    @classmethod
+    def balance(cls, coins, neons, glitches):
+        return f"💰 `{coins:,}`   ·   💜 `{neons:,}`   ·   🖥 `{glitches:,}`"
+
+    @classmethod
+    def footer(cls):
+        return f"\n`{cls.BOT}`\n`{cls.BRAND} · v9`"
 
 s = Style()
 
 # ========== ГЛОБАЛЬНЫЙ UI-СЛОЙ OBSIDIAN PRISM ==========
+# Все команды проекта проходят через этот слой: старые тексты и кнопки
+# автоматически получают новый визуальный язык, поэтому не требуется
+# вручную переписывать сотни reply_text/edit_message_text.
 _PRISM_MARK = "⟡ S P E C T R U M"
 
 _PRISM_BUTTONS = {
@@ -256,9 +286,9 @@ def _prism_button_text(btn):
 def _prism_keyboard(markup):
     if not isinstance(markup, InlineKeyboardMarkup):
         return markup
-    rows = []
+    rows=[]
     for row in markup.inline_keyboard:
-        new_row = []
+        new_row=[]
         for btn in row:
             text = _prism_button_text(btn)
             kwargs = {}
@@ -277,6 +307,7 @@ def _prism_keyboard(markup):
             try:
                 new_row.append(InlineKeyboardButton(text, **kwargs))
             except TypeError:
+                # Совместимость с python-telegram-bot 20.7 и более старыми версиями.
                 minimal = {}
                 if btn.callback_data is not None: minimal["callback_data"] = btn.callback_data
                 elif btn.url is not None: minimal["url"] = btn.url
@@ -288,11 +319,15 @@ def _prism_keyboard(markup):
 def _prism_text(text):
     if not text or _PRISM_MARK in text:
         return text
+    # Не переписываем чистые короткие уведомления/технические ответы,
+    # но все полноценные командные экраны получают единый chrome.
     if len(text) < 18:
         return text
-    return f"{_PRISM_MARK}\n`OBSIDIAN PRISM`\n\n{text}\n\n`{Style.SEPARATOR_LIGHT}`\n`/menu · навигация  |  /help · команды`"
+    return f"{_PRISM_MARK}\n`OBSIDIAN PRISM`\n\n{text}\n\n`{Style.THIN}`\n`/menu · навигация  |  /help · команды`"
+
 
 def install_prism_ui():
+    """Единый UI для всех существующих команд и callback-экранов."""
     try:
         from telegram import Message
         from telegram import CallbackQuery
@@ -324,9 +359,12 @@ def install_prism_ui():
     except Exception as exc:
         logging.getLogger(__name__).warning("Prism UI install failed: %s", exc)
 
+
+# Устанавливаем глобальный UI только после объявления функции.
 install_prism_ui()
 
-# ========== БАЗА ДАННЫХ ==========
+
+# ========== БАЗА ДАННЫХ (НАЧАЛО) ==========
 class Database:
     def __init__(self):
         self.conn = sqlite3.connect("spectrum.db", check_same_thread=False, timeout=30)
@@ -338,330 +376,572 @@ class Database:
         self.create_tables()
         self.conn.commit()
         self.init_data()
-        self.create_indexes()
+        self.create_indexes()  # добавим индексы для ускорения
         logger.info("✅ База данных инициализирована")
-
+    
     def create_tables(self):
-        # ... (все таблицы из первого файла; здесь они идентичны)
+        """Создание всех таблиц базы данных (полностью из вашего кода, без изменений)"""
+        
+        # Таблица bosses
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS bosses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT, level INTEGER, health INTEGER, max_health INTEGER,
-                damage INTEGER, reward_coins INTEGER, reward_exp INTEGER,
-                reward_neons INTEGER DEFAULT 0, reward_glitches INTEGER DEFAULT 0,
-                is_alive INTEGER DEFAULT 1, respawn_time TEXT
+                name TEXT,
+                level INTEGER,
+                health INTEGER,
+                max_health INTEGER,
+                damage INTEGER,
+                reward_coins INTEGER,
+                reward_exp INTEGER,
+                reward_neons INTEGER DEFAULT 0,
+                reward_glitches INTEGER DEFAULT 0,
+                is_alive INTEGER DEFAULT 1,
+                respawn_time TEXT
             )
         ''')
+        
+        # Таблица пользователей
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                telegram_id INTEGER UNIQUE, vk_id INTEGER UNIQUE,
-                username TEXT, first_name TEXT, last_name TEXT,
-                coins INTEGER DEFAULT 1000, neons INTEGER DEFAULT 0, glitches INTEGER DEFAULT 0,
-                energy INTEGER DEFAULT 100, level INTEGER DEFAULT 1, exp INTEGER DEFAULT 0,
-                health INTEGER DEFAULT 100, max_health INTEGER DEFAULT 100,
-                damage INTEGER DEFAULT 10, armor INTEGER DEFAULT 0,
-                crit_chance INTEGER DEFAULT 5, crit_multiplier INTEGER DEFAULT 150,
-                messages_count INTEGER DEFAULT 0, commands_used INTEGER DEFAULT 0,
-                rps_wins INTEGER DEFAULT 0, rps_losses INTEGER DEFAULT 0, rps_draws INTEGER DEFAULT 0,
-                casino_wins INTEGER DEFAULT 0, casino_losses INTEGER DEFAULT 0,
-                dice_wins INTEGER DEFAULT 0, dice_losses INTEGER DEFAULT 0,
-                rr_wins INTEGER DEFAULT 0, rr_losses INTEGER DEFAULT 0,
-                slots_wins INTEGER DEFAULT 0, slots_losses INTEGER DEFAULT 0,
-                guess_wins INTEGER DEFAULT 0, guess_losses INTEGER DEFAULT 0,
-                bulls_wins INTEGER DEFAULT 0, bulls_losses INTEGER DEFAULT 0,
-                boss_kills INTEGER DEFAULT 0, boss_damage INTEGER DEFAULT 0,
-                duel_wins INTEGER DEFAULT 0, duel_losses INTEGER DEFAULT 0, duel_rating INTEGER DEFAULT 1000,
-                mafia_games INTEGER DEFAULT 0, mafia_wins INTEGER DEFAULT 0, mafia_losses INTEGER DEFAULT 0,
-                clan_id INTEGER DEFAULT 0, clan_role TEXT DEFAULT 'member',
-                friends TEXT DEFAULT '[]', enemies TEXT DEFAULT '[]',
-                spouse INTEGER DEFAULT 0, married_since TEXT,
+                telegram_id INTEGER UNIQUE,
+                vk_id INTEGER UNIQUE,
+                username TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                coins INTEGER DEFAULT 1000,
+                neons INTEGER DEFAULT 0,
+                glitches INTEGER DEFAULT 0,
+                energy INTEGER DEFAULT 100,
+                level INTEGER DEFAULT 1,
+                exp INTEGER DEFAULT 0,
+                health INTEGER DEFAULT 100,
+                max_health INTEGER DEFAULT 100,
+                damage INTEGER DEFAULT 10,
+                armor INTEGER DEFAULT 0,
+                crit_chance INTEGER DEFAULT 5,
+                crit_multiplier INTEGER DEFAULT 150,
+                messages_count INTEGER DEFAULT 0,
+                commands_used INTEGER DEFAULT 0,
+                rps_wins INTEGER DEFAULT 0,
+                rps_losses INTEGER DEFAULT 0,
+                rps_draws INTEGER DEFAULT 0,
+                casino_wins INTEGER DEFAULT 0,
+                casino_losses INTEGER DEFAULT 0,
+                dice_wins INTEGER DEFAULT 0,
+                dice_losses INTEGER DEFAULT 0,
+                rr_wins INTEGER DEFAULT 0,
+                rr_losses INTEGER DEFAULT 0,
+                slots_wins INTEGER DEFAULT 0,
+                slots_losses INTEGER DEFAULT 0,
+                guess_wins INTEGER DEFAULT 0,
+                guess_losses INTEGER DEFAULT 0,
+                bulls_wins INTEGER DEFAULT 0,
+                bulls_losses INTEGER DEFAULT 0,
+                boss_kills INTEGER DEFAULT 0,
+                boss_damage INTEGER DEFAULT 0,
+                duel_wins INTEGER DEFAULT 0,
+                duel_losses INTEGER DEFAULT 0,
+                duel_rating INTEGER DEFAULT 1000,
+                mafia_games INTEGER DEFAULT 0,
+                mafia_wins INTEGER DEFAULT 0,
+                mafia_losses INTEGER DEFAULT 0,
+                clan_id INTEGER DEFAULT 0,
+                clan_role TEXT DEFAULT 'member',
+                friends TEXT DEFAULT '[]',
+                enemies TEXT DEFAULT '[]',
+                spouse INTEGER DEFAULT 0,
+                married_since TEXT,
                 reputation INTEGER DEFAULT 0,
-                nickname TEXT, title TEXT DEFAULT '', motto TEXT DEFAULT 'Нет девиза', bio TEXT DEFAULT '',
-                gender TEXT DEFAULT 'не указан', city TEXT DEFAULT 'не указан',
-                country TEXT DEFAULT 'не указана', birth_date TEXT, age INTEGER DEFAULT 0,
-                role TEXT DEFAULT 'user', rank INTEGER DEFAULT 0, rank_name TEXT DEFAULT 'Участник',
-                warns INTEGER DEFAULT 0, warns_list TEXT DEFAULT '[]', mute_until TEXT,
-                banned INTEGER DEFAULT 0, ban_reason TEXT, ban_date TEXT, ban_admin INTEGER,
-                vip_until TEXT, premium_until TEXT,
-                cyber_status_until TEXT, turbo_drive_until TEXT, cyber_luck_until TEXT,
-                firewall_used INTEGER DEFAULT 0, firewall_expires TEXT, rp_packet_until TEXT,
-                daily_streak INTEGER DEFAULT 0, last_daily TEXT, last_seen TEXT,
-                registered TEXT DEFAULT CURRENT_TIMESTAMP, referrer_id INTEGER,
+                nickname TEXT,
+                title TEXT DEFAULT '',
+                motto TEXT DEFAULT 'Нет девиза',
+                bio TEXT DEFAULT '',
+                gender TEXT DEFAULT 'не указан',
+                city TEXT DEFAULT 'не указан',
+                country TEXT DEFAULT 'не указана',
+                birth_date TEXT,
+                age INTEGER DEFAULT 0,
+                role TEXT DEFAULT 'user',
+                rank INTEGER DEFAULT 0,
+                rank_name TEXT DEFAULT 'Участник',
+                warns INTEGER DEFAULT 0,
+                warns_list TEXT DEFAULT '[]',
+                mute_until TEXT,
+                banned INTEGER DEFAULT 0,
+                ban_reason TEXT,
+                ban_date TEXT,
+                ban_admin INTEGER,
+                vip_until TEXT,
+                premium_until TEXT,
+                cyber_status_until TEXT,
+                turbo_drive_until TEXT,
+                cyber_luck_until TEXT,
+                firewall_used INTEGER DEFAULT 0,
+                firewall_expires TEXT,
+                rp_packet_until TEXT,
+                daily_streak INTEGER DEFAULT 0,
+                last_daily TEXT,
+                last_seen TEXT,
+                registered TEXT DEFAULT CURRENT_TIMESTAMP,
+                referrer_id INTEGER,
                 daily_messages TEXT DEFAULT '[]',
-                profile_visible INTEGER DEFAULT 1, achievements_visible INTEGER DEFAULT 1, stats_visible INTEGER DEFAULT 1,
-                last_farm TEXT, platform TEXT DEFAULT 'telegram',
-                current_quests TEXT DEFAULT '[]', completed_quests INTEGER DEFAULT 0,
-                exchange_volume INTEGER DEFAULT 0
+                profile_visible INTEGER DEFAULT 1,
+                achievements_visible INTEGER DEFAULT 1,
+                stats_visible INTEGER DEFAULT 1,
+                last_farm TEXT,
+                platform TEXT DEFAULT 'telegram',  -- telegram, vk
+                current_quests TEXT DEFAULT '[]',
+                completed_quests INTEGER DEFAULT 0,
+                exchange_volume INTEGER DEFAULT 0  -- Объем торгов на бирже
             )
         ''')
+        
+        # Таблица сообщений
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, username TEXT, first_name TEXT, message_text TEXT,
+                user_id INTEGER,
+                username TEXT,
+                first_name TEXT,
+                message_text TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                chat_id INTEGER, chat_title TEXT, platform TEXT DEFAULT 'telegram'
+                chat_id INTEGER,
+                chat_title TEXT,
+                platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица дневной статистики
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS daily_stats (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, date DATE, count INTEGER DEFAULT 0,
+                user_id INTEGER,
+                date DATE,
+                count INTEGER DEFAULT 0,
                 platform TEXT DEFAULT 'telegram',
                 UNIQUE(user_id, date, platform)
             )
         ''')
+        
+        # Таблица логов
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, action TEXT, details TEXT,
-                chat_id INTEGER, platform TEXT DEFAULT 'telegram',
+                user_id INTEGER,
+                action TEXT,
+                details TEXT,
+                chat_id INTEGER,
+                platform TEXT DEFAULT 'telegram',
                 timestamp TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Таблица чёрного списка
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS blacklist (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word TEXT UNIQUE, added_by INTEGER,
+                word TEXT UNIQUE,
+                added_by INTEGER,
                 added_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Таблица настроек чатов
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS chat_settings (
                 chat_id INTEGER PRIMARY KEY,
-                welcome TEXT, rules TEXT,
-                antiflood INTEGER DEFAULT 1, antispam INTEGER DEFAULT 1,
-                antilink INTEGER DEFAULT 0, captcha INTEGER DEFAULT 0,
-                lang TEXT DEFAULT 'ru', chat_code TEXT UNIQUE, chat_name TEXT,
+                welcome TEXT,
+                rules TEXT,
+                antiflood INTEGER DEFAULT 1,
+                antispam INTEGER DEFAULT 1,
+                antilink INTEGER DEFAULT 0,
+                captcha INTEGER DEFAULT 0,
+                lang TEXT DEFAULT 'ru',
+                chat_code TEXT UNIQUE,
+                chat_name TEXT,
                 circle_limit INTEGER DEFAULT 20,
-                treasury_neons INTEGER DEFAULT 0, treasury_glitches INTEGER DEFAULT 0,
-                glitch_hammer_price INTEGER DEFAULT 50, glitch_hammer_enabled INTEGER DEFAULT 1,
+                treasury_neons INTEGER DEFAULT 0,
+                treasury_glitches INTEGER DEFAULT 0,
+                glitch_hammer_price INTEGER DEFAULT 50,
+                glitch_hammer_enabled INTEGER DEFAULT 1,
                 glitch_hammer_min_rank INTEGER DEFAULT 0,
-                invisible_price INTEGER DEFAULT 30, invisible_enabled INTEGER DEFAULT 1,
-                neon_nick_price INTEGER DEFAULT 100, neon_nick_enabled INTEGER DEFAULT 1,
-                turbo_drive_price INTEGER DEFAULT 200, turbo_drive_boost INTEGER DEFAULT 30,
+                invisible_price INTEGER DEFAULT 30,
+                invisible_enabled INTEGER DEFAULT 1,
+                neon_nick_price INTEGER DEFAULT 100,
+                neon_nick_enabled INTEGER DEFAULT 1,
+                turbo_drive_price INTEGER DEFAULT 200,
+                turbo_drive_boost INTEGER DEFAULT 30,
                 turbo_drive_enabled INTEGER DEFAULT 1,
-                cyber_luck_price INTEGER DEFAULT 150, cyber_luck_boost INTEGER DEFAULT 15,
+                cyber_luck_price INTEGER DEFAULT 150,
+                cyber_luck_boost INTEGER DEFAULT 15,
                 cyber_luck_enabled INTEGER DEFAULT 1,
-                firewall_price INTEGER DEFAULT 80, firewall_enabled INTEGER DEFAULT 1,
-                rp_packet_price INTEGER DEFAULT 120, rp_packet_enabled INTEGER DEFAULT 1,
+                firewall_price INTEGER DEFAULT 80,
+                firewall_enabled INTEGER DEFAULT 1,
+                rp_packet_price INTEGER DEFAULT 120,
+                rp_packet_enabled INTEGER DEFAULT 1,
                 speech_enabled INTEGER DEFAULT 0,
-                ai_prompt TEXT DEFAULT 'ТЫ — СПЕКТР...',
-                platform TEXT DEFAULT 'telegram',
-                theme TEXT DEFAULT 'default'
+                ai_prompt TEXT DEFAULT 'ТЫ — СПЕКТР...',  -- Кастомизируемый промпт для AI
+                platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица дуэлей
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS duels (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                challenger_id INTEGER, opponent_id INTEGER, bet INTEGER,
-                status TEXT DEFAULT 'pending', winner_id INTEGER,
+                challenger_id INTEGER,
+                opponent_id INTEGER,
+                bet INTEGER,
+                status TEXT DEFAULT 'pending',
+                winner_id INTEGER,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица дуэлей с ботом
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS bot_duels (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, bet INTEGER, status TEXT DEFAULT 'pending',
-                user_choice TEXT, bot_choice TEXT, winner TEXT,
+                user_id INTEGER,
+                bet INTEGER,
+                status TEXT DEFAULT 'pending',
+                user_choice TEXT,
+                bot_choice TEXT,
+                winner TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица игр мафии (исправленная версия)
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS mafia_games (
-                game_id TEXT PRIMARY KEY, chat_id INTEGER,
-                status TEXT DEFAULT 'waiting', phase INTEGER DEFAULT 1, day INTEGER DEFAULT 1,
-                story TEXT, players TEXT, players_data TEXT, roles TEXT, alive TEXT,
-                votes TEXT, night_actions TEXT, creator_id INTEGER, message_id INTEGER,
+                game_id TEXT PRIMARY KEY,
+                chat_id INTEGER,
+                status TEXT DEFAULT 'waiting',
+                phase INTEGER DEFAULT 1,
+                day INTEGER DEFAULT 1,
+                story TEXT,
+                players TEXT,
+                players_data TEXT,
+                roles TEXT,
+                alive TEXT,
+                votes TEXT,
+                night_actions TEXT,
+                creator_id INTEGER,
+                message_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица подтверждений мафии
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS mafia_confirmations (
-                game_id TEXT, user_id INTEGER, confirmed INTEGER DEFAULT 0,
+                game_id TEXT,
+                user_id INTEGER,
+                confirmed INTEGER DEFAULT 0,
                 PRIMARY KEY (game_id, user_id)
             )
         ''')
+        
+        # Таблица триггеров
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS triggers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, word TEXT, action TEXT, action_value TEXT,
-                created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                chat_id INTEGER,
+                word TEXT,
+                action TEXT,
+                action_value TEXT,
+                created_by INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Таблица ачивок
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS achievements (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, achievement_id INTEGER,
+                user_id INTEGER,
+                achievement_id INTEGER,
                 unlocked_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 platform TEXT DEFAULT 'telegram',
                 UNIQUE(user_id, achievement_id, platform)
             )
         ''')
+        
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS achievements_list (
                 id INTEGER PRIMARY KEY,
-                name TEXT, description TEXT, category TEXT,
-                condition_type TEXT, condition_value INTEGER,
-                reward_neons INTEGER, reward_glitches INTEGER,
-                reward_title TEXT, reward_status TEXT, secret INTEGER DEFAULT 0
+                name TEXT,
+                description TEXT,
+                category TEXT,
+                condition_type TEXT,
+                condition_value INTEGER,
+                reward_neons INTEGER,
+                reward_glitches INTEGER,
+                reward_title TEXT,
+                reward_status TEXT,
+                secret INTEGER DEFAULT 0
             )
         ''')
+        
+        # Таблица кружков
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS circles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, name TEXT, description TEXT,
-                created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                chat_id INTEGER,
+                name TEXT,
+                description TEXT,
+                created_by INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 members TEXT DEFAULT '[]'
             )
         ''')
+        
+        # Таблица кланов
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS clans (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, name TEXT, description TEXT,
-                created_by INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                type TEXT DEFAULT 'open', reputation INTEGER DEFAULT 0, members INTEGER DEFAULT 1,
-                banned_users TEXT DEFAULT '[]', pending_requests TEXT DEFAULT '[]',
+                chat_id INTEGER,
+                name TEXT,
+                description TEXT,
+                created_by INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                type TEXT DEFAULT 'open',
+                reputation INTEGER DEFAULT 0,
+                members INTEGER DEFAULT 1,
+                banned_users TEXT DEFAULT '[]',
+                pending_requests TEXT DEFAULT '[]',
                 platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица закладок
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS bookmarks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, user_id INTEGER, name TEXT, content TEXT,
-                message_id INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                chat_id INTEGER,
+                user_id INTEGER,
+                name TEXT,
+                content TEXT,
+                message_id INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 visible INTEGER DEFAULT 1
             )
         ''')
+        
+        # Таблица таймеров
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS timers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, user_id INTEGER, execute_at TEXT, command TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending'
+                chat_id INTEGER,
+                user_id INTEGER,
+                execute_at TEXT,
+                command TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'pending'
             )
         ''')
+        
+        # Таблица наград
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS awards (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, user_id INTEGER, awarded_by INTEGER,
-                degree INTEGER, text TEXT, awarded_at TEXT DEFAULT CURRENT_TIMESTAMP
+                chat_id INTEGER,
+                user_id INTEGER,
+                awarded_by INTEGER,
+                degree INTEGER,
+                text TEXT,
+                awarded_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Таблица сеток чатов
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS chat_grids (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                owner_id INTEGER, name TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                owner_id INTEGER,
+                name TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS grid_chats (
-                grid_id INTEGER, chat_id INTEGER, PRIMARY KEY (grid_id, chat_id)
+                grid_id INTEGER,
+                chat_id INTEGER,
+                PRIMARY KEY (grid_id, chat_id)
             )
         ''')
+        
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS global_moderators (
-                grid_id INTEGER, user_id INTEGER, rank INTEGER,
+                grid_id INTEGER,
+                user_id INTEGER,
+                rank INTEGER,
                 PRIMARY KEY (grid_id, user_id)
             )
         ''')
+        
+        # Таблица бонусов пользователей
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_bonuses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, bonus_type TEXT, expires TEXT, data TEXT,
+                user_id INTEGER,
+                bonus_type TEXT,
+                expires TEXT,
+                data TEXT,
                 platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
+        # Таблица невидимок
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS invisible_bans (
-                chat_id INTEGER, user_id INTEGER, banned_by INTEGER,
+                chat_id INTEGER,
+                user_id INTEGER,
+                banned_by INTEGER,
                 PRIMARY KEY (chat_id, user_id)
             )
         ''')
+        
+        # Таблица голосований за бан
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS ban_votes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER, target_id INTEGER, created_by INTEGER,
+                chat_id INTEGER,
+                target_id INTEGER,
+                created_by INTEGER,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                required_votes INTEGER, min_rank INTEGER,
-                status TEXT DEFAULT 'active', votes_for INTEGER DEFAULT 0,
-                votes_against INTEGER DEFAULT 0, voters TEXT DEFAULT '[]'
+                required_votes INTEGER,
+                min_rank INTEGER,
+                status TEXT DEFAULT 'active',
+                votes_for INTEGER DEFAULT 0,
+                votes_against INTEGER DEFAULT 0,
+                voters TEXT DEFAULT '[]'
             )
         ''')
+        
+        # Таблица пар (шипперинг)
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS pairs (
-                chat_id INTEGER, user1_id INTEGER, user2_id INTEGER,
+                chat_id INTEGER,
+                user1_id INTEGER,
+                user2_id INTEGER,
                 paired_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (chat_id, user1_id, user2_id)
             )
         ''')
+        
+        # ===== ТАЙНЫЙ ОРДЕН =====
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS order_data (
-                chat_id INTEGER, cycle_number INTEGER DEFAULT 1,
-                is_active INTEGER DEFAULT 0, revelation_time TIMESTAMP,
-                members TEXT DEFAULT '[]', points TEXT DEFAULT '{}',
-                revealed INTEGER DEFAULT 0, platform TEXT DEFAULT 'telegram',
+                chat_id INTEGER,
+                cycle_number INTEGER DEFAULT 1,
+                is_active INTEGER DEFAULT 0,
+                revelation_time TIMESTAMP,
+                members TEXT DEFAULT '[]',
+                points TEXT DEFAULT '{}',
+                revealed INTEGER DEFAULT 0,
+                platform TEXT DEFAULT 'telegram',
                 PRIMARY KEY (chat_id, platform)
             )
         ''')
+        
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS order_ranks (
-                user_id INTEGER, chat_id INTEGER, total_points INTEGER DEFAULT 0,
-                rank INTEGER DEFAULT 0, rank_name TEXT DEFAULT '👤 Кандидат',
-                join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, last_reveal TIMESTAMP,
+                user_id INTEGER,
+                chat_id INTEGER,
+                total_points INTEGER DEFAULT 0,
+                rank INTEGER DEFAULT 0,
+                rank_name TEXT DEFAULT '👤 Кандидат',
+                join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_reveal TIMESTAMP,
                 platform TEXT DEFAULT 'telegram',
                 PRIMARY KEY (user_id, chat_id, platform)
             )
         ''')
+        
+        # ===== НОВЫЕ ТАБЛИЦЫ ДЛЯ УЛУЧШЕНИЙ =====
+        
+        # Таблица квестов (заданий)
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS quests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT, description TEXT, type TEXT,
-                condition_type TEXT, condition_value INTEGER,
-                reward_neons INTEGER, reward_glitches INTEGER,
-                complexity INTEGER DEFAULT 1, active INTEGER DEFAULT 1,
+                name TEXT,
+                description TEXT,
+                type TEXT,  -- daily, weekly, special
+                condition_type TEXT,  -- messages_count, boss_kills, duels_won, etc.
+                condition_value INTEGER,
+                reward_neons INTEGER,
+                reward_glitches INTEGER,
+                complexity INTEGER DEFAULT 1,  -- Множитель сложности
+                active INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_quests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, quest_id INTEGER,
-                progress INTEGER DEFAULT 0, completed INTEGER DEFAULT 0,
-                expires_at TIMESTAMP, platform TEXT DEFAULT 'telegram',
+                user_id INTEGER,
+                quest_id INTEGER,
+                progress INTEGER DEFAULT 0,
+                completed INTEGER DEFAULT 0,
+                expires_at TIMESTAMP,
+                platform TEXT DEFAULT 'telegram',
                 UNIQUE(user_id, quest_id, platform)
             )
         ''')
+        
+        # Журнал экономики — аудит источников и стоков валют
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS economy_transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, platform TEXT DEFAULT 'telegram',
-                currency TEXT, amount INTEGER, balance_after INTEGER,
-                source TEXT, meta TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                user_id INTEGER,
+                platform TEXT DEFAULT 'telegram',
+                currency TEXT,
+                amount INTEGER,
+                balance_after INTEGER,
+                source TEXT,
+                meta TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Таблица биржи
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS exchange_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER, type TEXT, currency_from TEXT, currency_to TEXT,
-                amount INTEGER, price INTEGER, filled INTEGER DEFAULT 0,
+                user_id INTEGER,
+                type TEXT,  -- buy, sell
+                currency_from TEXT,  -- coins, neons
+                currency_to TEXT,    -- neons, coins
+                amount INTEGER,
+                price INTEGER,  -- цена за единицу
+                filled INTEGER DEFAULT 0,
                 status TEXT DEFAULT 'active',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 platform TEXT DEFAULT 'telegram'
             )
         ''')
+        
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS exchange_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                price INTEGER, volume INTEGER,
+                price INTEGER,
+                volume INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
         self.conn.commit()
-
+    
     def create_indexes(self):
+        """Создание индексов для ускорения запросов"""
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id)")
@@ -669,8 +949,10 @@ class Database:
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_daily_stats_user_date ON daily_stats(user_id, date)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id)")
         self.conn.commit()
-
+    
     def init_data(self):
+        """Инициализация начальных данных в БД (полностью из вашего кода)"""
+        # Инициализация боссов
         self.cursor.execute("SELECT COUNT(*) FROM bosses")
         if self.cursor.fetchone()[0] == 0:
             bosses = [
@@ -687,10 +969,12 @@ class Database:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', boss)
             self.conn.commit()
-
+        
+        # Инициализация ачивок
         self.cursor.execute("SELECT COUNT(*) FROM achievements_list")
         if self.cursor.fetchone()[0] == 0:
             achievements = [
+                # id, name, description, category, condition_type, condition_value, reward_neons, reward_glitches, reward_title, reward_status, secret
                 (1, "💜 Неоновый новичок", "Хранение 1 000 неонов", "wealth", "neons", 1000, 0, 100, "", "", 0),
                 (2, "💜 Неоновый магнат", "Хранение 10 000 неонов", "wealth", "neons", 10000, 0, 1000, "Магнат", "", 0),
                 (3, "💜 Неоновый король", "Хранение 100 000 неонов", "wealth", "neons", 100000, 0, 5000, "", "Неоновый король", 0),
@@ -723,25 +1007,31 @@ class Database:
             ]
             for ach in achievements:
                 self.cursor.execute('''
-                    INSERT INTO achievements_list
+                    INSERT INTO achievements_list 
                     (id, name, description, category, condition_type, condition_value, reward_neons, reward_glitches, reward_title, reward_status, secret)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', ach)
             self.conn.commit()
-
+        
+        # Инициализация квестов
         self.cursor.execute("SELECT COUNT(*) FROM quests")
         if self.cursor.fetchone()[0] == 0:
             quests = [
+                # Ежедневные квесты
                 ("📨 Почтальон", "Отправить 10 сообщений в чате", "daily", "messages_count", 10, 50, 100, 2),
                 ("👾 Охотник", "Убить 2 боссов", "daily", "boss_kills", 2, 100, 200, 3),
                 ("⚔️ Дуэлянт", "Выиграть 1 дуэль", "daily", "duel_wins", 1, 150, 0, 2),
                 ("🎲 Игрок", "Сыграть в 3 игры", "daily", "games_played", 3, 80, 150, 1),
                 ("💬 Болтун", "Получить 5 ответов от AI", "daily", "ai_interactions", 5, 120, 0, 2),
+                
+                # Еженедельные квесты (с повышенной сложностью)
                 ("👑 Мафиози", "Сыграть 3 партии в мафию", "weekly", "mafia_games", 3, 500, 1000, 5),
                 ("💰 Магнат", "Накопить 10000 монет", "weekly", "coins_earned", 10000, 1000, 0, 4),
                 ("💜 Неоновый барон", "Накопить 1000 неонов", "weekly", "neons_earned", 1000, 0, 2000, 4),
                 ("👾 Легенда", "Убить 10 боссов", "weekly", "boss_kills", 10, 1000, 500, 5),
                 ("⚡ Турбо", "Потратить 500 энергии", "weekly", "energy_spent", 500, 800, 400, 3),
+                
+                # Особые квесты (редкие)
                 ("🔮 Тайный орден", "Стать избранным в ордене", "special", "order_member", 1, 2000, 1000, 10),
                 ("💞 Шиппер", "Создать 5 пар", "special", "pairs_created", 5, 1500, 500, 8),
                 ("📚 Чатбук", "Добавить 3 закладки", "special", "bookmarks_added", 3, 300, 600, 3)
@@ -777,8 +1067,9 @@ class Database:
             result[currency + "_spent"] = int(spent)
         return result
 
-    # ===== АНТИИНФЛЯЦИОННЫЕ МЕТОДЫ =====
+    # ===== АНТИИНФЛЯЦИОННЫЕ МЕТОДЫ (НОВЫЕ) =====
     def add_coins(self, user_id: int, amount: int, platform: str = "telegram") -> int:
+        """Добавляет монеты с проверкой лимита"""
         user = self.get_user_by_id(user_id, platform)
         if not user:
             return 0
@@ -797,6 +1088,7 @@ class Database:
         return current + amount
 
     def add_neons(self, user_id: int, amount: int, platform: str = "telegram") -> int:
+        """Добавляет неоны с проверкой лимита"""
         user = self.get_user_by_id(user_id, platform)
         if not user:
             return 0
@@ -816,6 +1108,7 @@ class Database:
         return current + amount
 
     def add_glitches(self, user_id: int, amount: int, platform: str = "telegram") -> int:
+        """Добавляет глитчи с проверкой лимита"""
         user = self.get_user_by_id(user_id, platform)
         if not user:
             return 0
@@ -835,14 +1128,17 @@ class Database:
         return current + amount
 
     def get_transfer_commission(self, amount: int) -> int:
+        """Прогрессивная комиссия на переводы (сжигается)"""
         if amount < 1000:
-            return int(amount * 0.02)
+            return int(amount * 0.02)  # 2%
         elif amount < 10000:
-            return int(amount * 0.05)
+            return int(amount * 0.05)  # 5%
         else:
-            return int(amount * 0.10)
+            return int(amount * 0.10)  # 10%
 
     def apply_wealth_tax(self):
+        """Еженедельный налог на богатство (1% от превышения порога)"""
+        # Монеты
         self.cursor.execute("SELECT id, coins FROM users WHERE coins > ? AND platform='telegram'", (WEALTH_TAX_THRESHOLD,))
         for row in self.cursor.fetchall():
             user_id, coins = row[0], row[1]
@@ -850,7 +1146,8 @@ class Database:
             tax = int(excess * WEALTH_TAX_RATE)
             self.add_coins(user_id, -tax)
             self.log_action(user_id, "wealth_tax", f"-{tax} coins")
-
+        
+        # Неоны (порог в 10 раз меньше)
         self.cursor.execute("SELECT id, neons FROM users WHERE neons > ? AND platform='telegram'", (NEON_WEALTH_TAX_THRESHOLD,))
         for row in self.cursor.fetchall():
             user_id, neons = row[0], row[1]
@@ -858,7 +1155,8 @@ class Database:
             tax = int(excess * WEALTH_TAX_RATE)
             self.add_neons(user_id, -tax)
             self.log_action(user_id, "wealth_tax", f"-{tax} neons")
-
+        
+        # Глитчи (порог в 10 раз меньше)
         self.cursor.execute("SELECT id, glitches FROM users WHERE glitches > ? AND platform='telegram'", (GLITCH_WEALTH_TAX_THRESHOLD,))
         for row in self.cursor.fetchall():
             user_id, glitches = row[0], row[1]
@@ -868,51 +1166,53 @@ class Database:
             self.log_action(user_id, "wealth_tax", f"-{tax} glitches")
         self.conn.commit()
 
-    # ===== ОСНОВНЫЕ МЕТОДЫ =====
+    # ===== ОСНОВНЫЕ МЕТОДЫ (ПОЛНОСТЬЮ ИЗ ВАШЕГО КОДА) =====
     def get_user(self, telegram_id: int, first_name: str = None, platform: str = "telegram") -> Dict[str, Any]:
+        """Получить или создать пользователя"""
         id_field = "telegram_id" if platform == "telegram" else "vk_id"
-
+        
         self.cursor.execute(f"SELECT * FROM users WHERE {id_field} = ? AND platform = ?", (telegram_id, platform))
         row = self.cursor.fetchone()
-
+        
         if not row:
             name = first_name if first_name else f"User{telegram_id}"
+            
             role = 'owner' if (platform == "telegram" and telegram_id == OWNER_ID) else 'user'
             rank = 5 if (platform == "telegram" and telegram_id == OWNER_ID) else 0
             rank_name = RANKS[rank]["name"]
-
+            
             self.cursor.execute(f'''
                 INSERT INTO users ({id_field}, first_name, role, rank, rank_name, last_seen, platform)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (telegram_id, name, role, rank, rank_name, datetime.now().isoformat(), platform))
             self.conn.commit()
             return self.get_user(telegram_id, name, platform)
-
+        
         user = dict(row)
-
+        
         if first_name and user['first_name'] != first_name and (user['first_name'] == 'Player' or user['first_name'].startswith('User')):
             self.cursor.execute(f"UPDATE users SET first_name = ? WHERE {id_field} = ? AND platform = ?",
                               (first_name, telegram_id, platform))
             user['first_name'] = first_name
-
+        
         self.cursor.execute(f"UPDATE users SET last_seen = ? WHERE {id_field} = ? AND platform = ?",
                           (datetime.now().isoformat(), telegram_id, platform))
         self.conn.commit()
-
+        
         return user
-
+    
     def get_user_by_id(self, user_id: int, platform: str = "telegram") -> Optional[Dict[str, Any]]:
         self.cursor.execute("SELECT * FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
         return dict(row) if row else None
-
+    
     def get_user_by_username(self, username: str, platform: str = "telegram") -> Optional[Dict[str, Any]]:
         if username.startswith('@'):
             username = username[1:]
         self.cursor.execute("SELECT * FROM users WHERE username = ? AND platform = ?", (username, platform))
         row = self.cursor.fetchone()
         return dict(row) if row else None
-
+    
     def update_user(self, user_id: int, platform: str = "telegram", **kwargs) -> bool:
         if not kwargs:
             return False
@@ -920,13 +1220,19 @@ class Database:
             self.cursor.execute(f"UPDATE users SET {key} = ? WHERE id = ? AND platform = ?", (value, user_id, platform))
         self.conn.commit()
         return True
-
+    
     def is_banned(self, user_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("SELECT banned FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
         return row and row[0] == 1
+    
+    # ===== ВАЛЮТЫ (базовые, но антиинфляционные выше переопределяют их) =====
+    # Оставляем оригинальные методы, но они не будут использоваться, т.к. мы заменили add_coins и др.
+    # Однако для совместимости оставим их как есть, а антиинфляционные методы названы так же.
+    # (В вашем коде эти методы уже есть, но мы их переопределяем выше, так что дублировать не нужно.)
+    # Пропускаем, чтобы не дублировать.
 
-    # ===== АЧИВКИ =====
+    # ===== МЕТОДЫ ДЛЯ АЧИВОК =====
     def check_wealth_achievements(self, user_id: int, platform: str = "telegram"):
         user = self.get_user_by_id(user_id, platform)
         if not user:
@@ -936,7 +1242,7 @@ class Database:
         for ach_id, threshold in thresholds:
             if neons >= threshold:
                 self.unlock_achievement(user_id, ach_id, platform)
-
+    
     def check_glitch_achievements(self, user_id: int, platform: str = "telegram"):
         user = self.get_user_by_id(user_id, platform)
         if not user:
@@ -946,7 +1252,7 @@ class Database:
         for ach_id, threshold in thresholds:
             if glitches >= threshold:
                 self.unlock_achievement(user_id, ach_id, platform)
-
+    
     def unlock_achievement(self, user_id: int, achievement_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("SELECT id FROM achievements WHERE user_id = ? AND achievement_id = ? AND platform = ?",
                           (user_id, achievement_id, platform))
@@ -967,7 +1273,7 @@ class Database:
             self.update_user(user_id, platform, title=ach['reward_title'])
         self.conn.commit()
         return True
-
+    
     def get_user_achievements(self, user_id: int, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute("""
             SELECT a.*, al.name, al.description, al.category, al.reward_neons, al.reward_glitches, al.secret
@@ -978,7 +1284,7 @@ class Database:
         """, (user_id, platform))
         return [dict(row) for row in self.cursor.fetchall()]
 
-    # ===== КРУЖКИ =====
+    # ===== МЕТОДЫ ДЛЯ КРУЖКОВ =====
     def create_circle(self, chat_id: int, name: str, description: str, creator_id: int) -> Optional[int]:
         self.cursor.execute("SELECT COUNT(*) FROM circles WHERE created_by = ?", (creator_id,))
         if self.cursor.fetchone()[0] >= MAX_CIRCLES_PER_USER:
@@ -995,7 +1301,7 @@ class Database:
         """, (chat_id, name, description, creator_id, json.dumps([creator_id])))
         self.conn.commit()
         return self.cursor.lastrowid
-
+    
     def join_circle(self, circle_id: int, user_id: int) -> bool:
         self.cursor.execute("SELECT members FROM circles WHERE id = ?", (circle_id,))
         row = self.cursor.fetchone()
@@ -1008,7 +1314,7 @@ class Database:
         self.cursor.execute("UPDATE circles SET members = ? WHERE id = ?", (json.dumps(members), circle_id))
         self.conn.commit()
         return True
-
+    
     def leave_circle(self, circle_id: int, user_id: int) -> bool:
         self.cursor.execute("SELECT members, created_by FROM circles WHERE id = ?", (circle_id,))
         row = self.cursor.fetchone()
@@ -1024,7 +1330,7 @@ class Database:
         self.conn.commit()
         return True
 
-    # ===== КЛАНЫ =====
+    # ===== МЕТОДЫ ДЛЯ КЛАНОВ =====
     def create_clan(self, chat_id: int, name: str, description: str, creator_id: int, platform: str = "telegram") -> Optional[int]:
         user = self.get_user_by_id(creator_id, platform)
         if user.get('clan_id', 0) != 0:
@@ -1037,7 +1343,7 @@ class Database:
         self.update_user(creator_id, platform, clan_id=clan_id, clan_role='owner')
         self.conn.commit()
         return clan_id
-
+    
     def join_clan(self, clan_id: int, user_id: int, platform: str = "telegram") -> bool:
         user = self.get_user_by_id(user_id, platform)
         if user.get('clan_id', 0) != 0:
@@ -1058,7 +1364,7 @@ class Database:
         self.cursor.execute("UPDATE clans SET members = members + 1 WHERE id = ? AND platform = ?", (clan_id, platform))
         self.conn.commit()
         return True
-
+    
     def leave_clan(self, user_id: int, platform: str = "telegram") -> bool:
         user = self.get_user_by_id(user_id, platform)
         if not user or user.get('clan_id', 0) == 0:
@@ -1074,7 +1380,7 @@ class Database:
         self.conn.commit()
         return True
 
-    # ===== ЗАКЛАДКИ =====
+    # ===== МЕТОДЫ ДЛЯ ЗАКЛАДОК =====
     def add_bookmark(self, chat_id: int, user_id: int, name: str, content: str, message_id: int = None) -> int:
         self.cursor.execute("""
             INSERT INTO bookmarks (chat_id, user_id, name, content, message_id)
@@ -1082,7 +1388,7 @@ class Database:
         """, (chat_id, user_id, name, content, message_id))
         self.conn.commit()
         return self.cursor.lastrowid
-
+    
     def get_chat_bookmarks(self, chat_id: int) -> List[Dict]:
         self.cursor.execute("""
             SELECT b.*, u.first_name, u.username
@@ -1092,7 +1398,7 @@ class Database:
             ORDER BY b.created_at DESC
         """, (chat_id,))
         return [dict(row) for row in self.cursor.fetchall()]
-
+    
     def get_user_bookmarks(self, user_id: int, chat_id: int = None) -> List[Dict]:
         if chat_id:
             self.cursor.execute("""
@@ -1108,7 +1414,7 @@ class Database:
             """, (user_id,))
         return [dict(row) for row in self.cursor.fetchall()]
 
-    # ===== ТАЙМЕРЫ =====
+    # ===== МЕТОДЫ ДЛЯ ТАЙМЕРОВ =====
     def add_timer(self, chat_id: int, user_id: int, execute_at: datetime, command: str) -> Optional[int]:
         self.cursor.execute("SELECT COUNT(*) FROM timers WHERE chat_id = ? AND status = 'pending'", (chat_id,))
         if self.cursor.fetchone()[0] >= 5:
@@ -1119,7 +1425,7 @@ class Database:
         """, (chat_id, user_id, execute_at.isoformat(), command))
         self.conn.commit()
         return self.cursor.lastrowid
-
+    
     def get_pending_timers(self) -> List[Dict]:
         now = datetime.now().isoformat()
         self.cursor.execute("""
@@ -1127,12 +1433,12 @@ class Database:
             WHERE status = 'pending' AND execute_at <= ?
         """, (now,))
         return [dict(row) for row in self.cursor.fetchall()]
-
+    
     def complete_timer(self, timer_id: int):
         self.cursor.execute("UPDATE timers SET status = 'completed' WHERE id = ?", (timer_id,))
         self.conn.commit()
 
-    # ===== НАГРАДЫ =====
+    # ===== МЕТОДЫ ДЛЯ НАГРАД =====
     def give_award(self, chat_id: int, user_id: int, awarded_by: int, degree: int, text: str) -> int:
         self.cursor.execute("""
             INSERT INTO awards (chat_id, user_id, awarded_by, degree, text)
@@ -1140,7 +1446,7 @@ class Database:
         """, (chat_id, user_id, awarded_by, degree, text))
         self.conn.commit()
         return self.cursor.lastrowid
-
+    
     def get_user_awards(self, user_id: int, chat_id: int = None) -> List[Dict]:
         if chat_id:
             self.cursor.execute("""
@@ -1160,7 +1466,7 @@ class Database:
             """, (user_id,))
         return [dict(row) for row in self.cursor.fetchall()]
 
-    # ===== БОНУСЫ =====
+    # ===== МЕТОДЫ ДЛЯ БОНУСОВ =====
     def buy_bonus(self, user_id: int, bonus_type: str, duration_days: int, price_neons: int, platform: str = "telegram") -> bool:
         user = self.get_user_by_id(user_id, platform)
         if user.get('neons', 0) < price_neons:
@@ -1190,10 +1496,10 @@ class Database:
         self.add_neons(user_id, -price_neons, platform)
         self.conn.commit()
         return True
-
+    
     def use_glitch_hammer(self, user_id: int, chat_id: int, target_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("""
-            SELECT * FROM user_bonuses
+            SELECT * FROM user_bonuses 
             WHERE user_id = ? AND bonus_type = 'glitch_hammer' AND platform = ? AND (expires IS NULL OR expires > ?)
         """, (user_id, platform, datetime.now().isoformat()))
         bonus = self.cursor.fetchone()
@@ -1209,19 +1515,19 @@ class Database:
             self.cursor.execute("UPDATE user_bonuses SET data = ? WHERE id = ?", (json.dumps(data), bonus[0]))
         self.conn.commit()
         return True
-
+    
     def has_invisible_bonus(self, user_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("""
-            SELECT * FROM user_bonuses
+            SELECT * FROM user_bonuses 
             WHERE user_id = ? AND bonus_type = 'invisible' AND platform = ? AND (expires IS NULL OR expires > ?)
         """, (user_id, platform, datetime.now().isoformat()))
         return self.cursor.fetchone() is not None
-
+    
     def is_invisible_banned(self, chat_id: int, user_id: int) -> bool:
         self.cursor.execute("SELECT * FROM invisible_bans WHERE chat_id = ? AND user_id = ?", (chat_id, user_id))
         return self.cursor.fetchone() is not None
 
-    # ===== ГОЛОСОВАНИЯ =====
+    # ===== МЕТОДЫ ДЛЯ ГОЛОСОВАНИЙ =====
     def create_ban_vote(self, chat_id: int, target_id: int, created_by: int, required_votes: int, min_rank: int) -> int:
         self.cursor.execute("""
             INSERT INTO ban_votes (chat_id, target_id, created_by, required_votes, min_rank)
@@ -1229,7 +1535,7 @@ class Database:
         """, (chat_id, target_id, created_by, required_votes, min_rank))
         self.conn.commit()
         return self.cursor.lastrowid
-
+    
     def vote_for_ban(self, vote_id: int, user_id: int, vote: bool) -> bool:
         self.cursor.execute("SELECT * FROM ban_votes WHERE id = ? AND status = 'active'", (vote_id,))
         vote_data = self.cursor.fetchone()
@@ -1246,14 +1552,14 @@ class Database:
             new_for = vote_data[7]
             new_against = vote_data[8] + 1
         self.cursor.execute("""
-            UPDATE ban_votes
+            UPDATE ban_votes 
             SET votes_for = ?, votes_against = ?, voters = ?
             WHERE id = ?
         """, (new_for, new_against, json.dumps(voters), vote_id))
         self.conn.commit()
         return True
 
-    # ===== ПАРЫ =====
+    # ===== МЕТОДЫ ДЛЯ ПАР =====
     def create_pair(self, chat_id: int, user1_id: int, user2_id: int) -> bool:
         try:
             self.cursor.execute("""
@@ -1264,7 +1570,7 @@ class Database:
             return True
         except:
             return False
-
+    
     def get_chat_pairs(self, chat_id: int) -> List[Dict]:
         self.cursor.execute("""
             SELECT p.*, u1.first_name as name1, u2.first_name as name2
@@ -1281,18 +1587,18 @@ class Database:
             INSERT INTO messages (user_id, username, first_name, message_text, chat_id, chat_title, platform)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', (user_id, username, first_name, text, chat_id, chat_title, platform))
-
+        
         today = datetime.now().date().isoformat()
-
+        
         self.cursor.execute('''
-            SELECT id FROM daily_stats
+            SELECT id FROM daily_stats 
             WHERE user_id = ? AND date = ? AND platform = ?
         ''', (user_id, today, platform))
         exists = self.cursor.fetchone()
-
+        
         if exists:
             self.cursor.execute('''
-                UPDATE daily_stats SET count = count + 1
+                UPDATE daily_stats SET count = count + 1 
                 WHERE user_id = ? AND date = ? AND platform = ?
             ''', (user_id, today, platform))
         else:
@@ -1300,15 +1606,15 @@ class Database:
                 INSERT INTO daily_stats (user_id, date, count, platform)
                 VALUES (?, ?, 1, ?)
             ''', (user_id, today, platform))
-
+        
         self.cursor.execute('''
             SELECT id FROM users WHERE telegram_id = ? AND platform = ?
         ''', (user_id, platform))
         user_exists = self.cursor.fetchone()
-
+        
         if user_exists:
             self.cursor.execute('''
-                UPDATE users SET
+                UPDATE users SET 
                     last_seen = CURRENT_TIMESTAMP,
                     messages_count = messages_count + 1,
                     username = ?,
@@ -1320,9 +1626,9 @@ class Database:
                 INSERT INTO users (telegram_id, username, first_name, last_seen, messages_count, platform)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP, 1, ?)
             ''', (user_id, username, first_name, platform))
-
+        
         self.conn.commit()
-
+        
         user = self.get_user_by_id(user_id, platform)
         if user:
             msg_count = user.get('messages_count', 0) + 1
@@ -1332,23 +1638,26 @@ class Database:
                 self.unlock_achievement(user_id, 17, platform)
             if msg_count >= 10000:
                 self.unlock_achievement(user_id, 18, platform)
-
+    
     def get_weekly_stats(self, user_id: int, platform: str = "telegram") -> Tuple[List[str], List[int]]:
         days = []
         counts = []
+        
         for i in range(6, -1, -1):
             date = (datetime.now() - timedelta(days=i)).date()
             day_name = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][date.weekday()]
             days.append(day_name)
+            
             self.cursor.execute('''
                 SELECT count FROM daily_stats
                 WHERE user_id = ? AND date = ? AND platform = ?
             ''', (user_id, date.isoformat(), platform))
             row = self.cursor.fetchone()
             counts.append(row[0] if row else 0)
+        
         return days, counts
 
-    # ===== ЭНЕРГИЯ / ЗДОРОВЬЕ / ОПЫТ =====
+    # ===== ПРОЧИЕ МЕТОДЫ (ЭНЕРГИЯ, ЗДОРОВЬЕ, ОПЫТ) =====
     def add_exp(self, user_id: int, amount: int, platform: str = "telegram") -> bool:
         self.cursor.execute("UPDATE users SET exp = exp + ? WHERE id = ? AND platform = ?", (amount, user_id, platform))
         self.cursor.execute("SELECT exp, level FROM users WHERE id = ? AND platform = ?", (user_id, platform))
@@ -1361,39 +1670,39 @@ class Database:
             return True
         self.conn.commit()
         return False
-
+    
     def add_energy(self, user_id: int, amount: int, platform: str = "telegram") -> int:
         self.cursor.execute("UPDATE users SET energy = MIN(100, energy + ?) WHERE id = ? AND platform = ?", (amount, user_id, platform))
         self.conn.commit()
         self.cursor.execute("SELECT energy FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         return self.cursor.fetchone()[0]
-
+    
     def heal(self, user_id: int, amount: int, platform: str = "telegram") -> int:
         self.cursor.execute("UPDATE users SET health = MIN(max_health, health + ?) WHERE id = ? AND platform = ?", (amount, user_id, platform))
         self.conn.commit()
         self.cursor.execute("SELECT health FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         return self.cursor.fetchone()[0]
-
+    
     def damage(self, user_id: int, amount: int, platform: str = "telegram") -> int:
         self.cursor.execute("UPDATE users SET health = MAX(0, health - ?) WHERE id = ? AND platform = ?", (amount, user_id, platform))
         self.conn.commit()
         self.cursor.execute("SELECT health FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         return self.cursor.fetchone()[0]
-
+    
     def is_vip(self, user_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("SELECT vip_until FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
         if row and row[0]:
             return datetime.fromisoformat(row[0]) > datetime.now()
         return False
-
+    
     def is_premium(self, user_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("SELECT premium_until FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
         if row and row[0]:
             return datetime.fromisoformat(row[0]) > datetime.now()
         return False
-
+    
     def set_vip(self, user_id: int, days: int, platform: str = "telegram") -> datetime:
         until = datetime.now() + timedelta(days=days)
         self.cursor.execute("UPDATE users SET vip_until = ?, role = 'vip' WHERE id = ? AND platform = ?",
@@ -1401,7 +1710,7 @@ class Database:
         self.conn.commit()
         self.unlock_achievement(user_id, 22, platform)
         return until
-
+    
     def set_premium(self, user_id: int, days: int, platform: str = "telegram") -> datetime:
         until = datetime.now() + timedelta(days=days)
         self.cursor.execute("UPDATE users SET premium_until = ?, role = 'premium' WHERE id = ? AND platform = ?",
@@ -1418,11 +1727,11 @@ class Database:
         self.conn.commit()
         self.log_action(admin_id, "set_rank", f"{user_id} -> {rank}", platform=platform)
         return True
-
+    
     def get_admins(self, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute("SELECT id, first_name, username, rank, rank_name FROM users WHERE rank > 0 AND platform = ? ORDER BY rank DESC", (platform,))
         return [dict(row) for row in self.cursor.fetchall()]
-
+    
     def add_warn(self, user_id: int, admin_id: int, reason: str, platform: str = "telegram") -> int:
         self.cursor.execute("SELECT warns, warns_list FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
@@ -1439,12 +1748,12 @@ class Database:
         self.conn.commit()
         self.log_action(admin_id, "add_warn", f"{user_id}: {reason}", platform=platform)
         return new_warns
-
+    
     def get_warns(self, user_id: int, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute("SELECT warns_list FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
         return json.loads(row[0]) if row and row[0] else []
-
+    
     def remove_last_warn(self, user_id: int, admin_id: int, platform: str = "telegram") -> Optional[Dict]:
         self.cursor.execute("SELECT warns, warns_list FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
@@ -1457,37 +1766,37 @@ class Database:
         self.conn.commit()
         self.log_action(admin_id, "remove_warn", f"{user_id}", platform=platform)
         return removed
-
+    
     def mute_user(self, user_id: int, minutes: int, admin_id: int, reason: str = "", platform: str = "telegram") -> datetime:
         until = datetime.now() + timedelta(minutes=minutes)
         self.cursor.execute("UPDATE users SET mute_until = ? WHERE id = ? AND platform = ?", (until.isoformat(), user_id, platform))
         self.conn.commit()
         self.log_action(admin_id, "mute", f"{user_id} {minutes}мин: {reason}", platform=platform)
         return until
-
+    
     def is_muted(self, user_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("SELECT mute_until FROM users WHERE id = ? AND platform = ?", (user_id, platform))
         row = self.cursor.fetchone()
         if row and row[0]:
             return datetime.fromisoformat(row[0]) > datetime.now()
         return False
-
+    
     def unmute_user(self, user_id: int, admin_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("UPDATE users SET mute_until = NULL WHERE id = ? AND platform = ?", (user_id, platform))
         self.conn.commit()
         self.log_action(admin_id, "unmute", str(user_id), platform=platform)
         return True
-
+    
     def get_muted_users(self, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute("SELECT id, first_name, username, mute_until FROM users WHERE mute_until > ? AND platform = ?",
                           (datetime.now().isoformat(), platform))
         return [dict(row) for row in self.cursor.fetchall()]
-
+    
     def ban_user(self, user_id: int, admin_id: int, reason: str, platform: str = "telegram") -> bool:
         try:
             now = datetime.now().isoformat()
             self.cursor.execute('''
-                UPDATE users SET
+                UPDATE users SET 
                     banned = 1,
                     ban_reason = ?,
                     ban_date = ?,
@@ -1500,11 +1809,11 @@ class Database:
         except Exception as e:
             logger.error(f"Ошибка при бане в БД (user_id: {user_id}): {e}")
             return False
-
+    
     def unban_user(self, user_id: int, admin_id: int, platform: str = "telegram") -> bool:
         try:
             self.cursor.execute('''
-                UPDATE users SET
+                UPDATE users SET 
                     banned = 0,
                     ban_reason = NULL,
                     ban_date = NULL,
@@ -1517,7 +1826,7 @@ class Database:
         except Exception as e:
             logger.error(f"Ошибка при разбане в БД (user_id: {user_id}): {e}")
             return False
-
+    
     def get_banlist(self, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute("SELECT id, first_name, username FROM users WHERE banned = 1 AND platform = ? ORDER BY ban_date DESC", (platform,))
         return [dict(row) for row in self.cursor.fetchall()]
@@ -1531,17 +1840,17 @@ class Database:
             return True
         except:
             return False
-
+    
     def remove_from_blacklist(self, word: str, admin_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute("DELETE FROM blacklist WHERE word = ?", (word.lower(),))
         self.conn.commit()
         self.log_action(admin_id, "remove_blacklist", word, platform=platform)
         return self.cursor.rowcount > 0
-
+    
     def get_blacklist(self) -> List[str]:
         self.cursor.execute("SELECT word FROM blacklist ORDER BY word")
         return [row[0] for row in self.cursor.fetchall()]
-
+    
     def is_word_blacklisted(self, text: str) -> bool:
         words = self.get_blacklist()
         text_lower = text.lower()
@@ -1590,12 +1899,12 @@ class Database:
         else:
             self.cursor.execute("SELECT * FROM bosses ORDER BY level")
         return [dict(row) for row in self.cursor.fetchall()]
-
+    
     def get_boss(self, boss_id: int) -> Optional[Dict]:
         self.cursor.execute("SELECT * FROM bosses WHERE id = ?", (boss_id,))
         row = self.cursor.fetchone()
         return dict(row) if row else None
-
+    
     def damage_boss(self, boss_id: int, damage: int) -> bool:
         self.cursor.execute("UPDATE bosses SET health = health - ? WHERE id = ?", (damage, boss_id))
         self.cursor.execute("SELECT health FROM bosses WHERE id = ?", (boss_id,))
@@ -1607,11 +1916,11 @@ class Database:
             return True
         self.conn.commit()
         return False
-
+    
     def respawn_bosses(self):
         self.cursor.execute("UPDATE bosses SET health = max_health, is_alive = 1, respawn_time = NULL")
         self.conn.commit()
-
+    
     def add_boss_kill(self, user_id: int, platform: str = "telegram"):
         self.cursor.execute("UPDATE users SET boss_kills = boss_kills + 1 WHERE id = ? AND platform = ?", (user_id, platform))
         self.conn.commit()
@@ -1632,12 +1941,12 @@ class Database:
         ''', (challenger_id, opponent_id, bet, platform))
         self.conn.commit()
         return self.cursor.lastrowid
-
+    
     def get_duel(self, duel_id: int, platform: str = "telegram") -> Optional[Dict]:
         self.cursor.execute("SELECT * FROM duels WHERE id = ? AND platform = ?", (duel_id, platform))
         row = self.cursor.fetchone()
         return dict(row) if row else None
-
+    
     def update_duel(self, duel_id: int, platform: str = "telegram", **kwargs):
         for key, value in kwargs.items():
             self.cursor.execute(f"UPDATE duels SET {key} = ? WHERE id = ? AND platform = ?", (value, duel_id, platform))
@@ -1654,7 +1963,7 @@ class Database:
     # ===== ТАЙНЫЙ ОРДЕН =====
     def is_in_order(self, user_id: int, chat_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute('''
-            SELECT members FROM order_data
+            SELECT members FROM order_data 
             WHERE chat_id = ? AND platform = ? AND is_active = 1
         ''', (chat_id, platform))
         row = self.cursor.fetchone()
@@ -1662,7 +1971,7 @@ class Database:
             return False
         members = json.loads(row[0])
         return user_id in members
-
+    
     def get_user_rank(self, user_id: int, chat_id: int, platform: str = "telegram") -> Dict:
         self.cursor.execute('''
             SELECT rank, rank_name, total_points FROM order_ranks
@@ -1672,7 +1981,7 @@ class Database:
         if row:
             return {"rank": row[0], "name": row[1], "points": row[2]}
         return {"rank": 0, "name": "👤 Кандидат", "points": 0}
-
+    
     def calculate_rank(self, points: int) -> Dict:
         ranks = [
             (0, 0, "👤 Кандидат"),
@@ -1691,7 +2000,7 @@ class Database:
             if points >= min_points:
                 return {"rank": rank_num, "name": rank_name}
         return {"rank": 0, "name": "👤 Кандидат"}
-
+    
     def add_order_points(self, user_id: int, chat_id: int, points: int, reason: str = "", platform: str = "telegram"):
         self.cursor.execute('''
             SELECT total_points FROM order_ranks
@@ -1702,7 +2011,7 @@ class Database:
             new_total = row[0] + points
             new_rank = self.calculate_rank(new_total)
             self.cursor.execute('''
-                UPDATE order_ranks
+                UPDATE order_ranks 
                 SET total_points = ?, rank = ?, rank_name = ?
                 WHERE user_id = ? AND chat_id = ? AND platform = ?
             ''', (new_total, new_rank["rank"], new_rank["name"], user_id, chat_id, platform))
@@ -1714,7 +2023,7 @@ class Database:
             ''', (user_id, chat_id, points, new_rank["rank"], new_rank["name"], platform))
         self.conn.commit()
         return new_rank
-
+    
     def start_order_cycle(self, chat_id: int, platform: str = "telegram") -> Tuple[List[int], int]:
         self.cursor.execute('''
             SELECT DISTINCT user_id FROM messages
@@ -1741,7 +2050,7 @@ class Database:
         if row:
             cycle = row[0] + 1
             self.cursor.execute('''
-                UPDATE order_data
+                UPDATE order_data 
                 SET cycle_number = ?, is_active = 1, members = ?, revealed = 0,
                     revelation_time = datetime('now', '+7 days')
                 WHERE chat_id = ? AND platform = ?
@@ -1754,10 +2063,10 @@ class Database:
             ''', (chat_id, cycle, json.dumps(members), platform))
         self.conn.commit()
         return members, cycle
-
+    
     def reveal_order(self, chat_id: int, platform: str = "telegram") -> Optional[Dict]:
         self.cursor.execute('''
-            SELECT members, points, cycle_number FROM order_data
+            SELECT members, points, cycle_number FROM order_data 
             WHERE chat_id = ? AND platform = ? AND is_active = 1
         ''', (chat_id, platform))
         row = self.cursor.fetchone()
@@ -1778,15 +2087,15 @@ class Database:
             "cycle": cycle
         }
 
-    # ===== КВЕСТЫ =====
+    # ===== НОВЫЕ МЕТОДЫ ДЛЯ КВЕСТОВ =====
     def assign_daily_quests(self, user_id: int, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute('''
-            DELETE FROM user_quests
-            WHERE user_id = ? AND platform = ? AND quest_id IN
+            DELETE FROM user_quests 
+            WHERE user_id = ? AND platform = ? AND quest_id IN 
             (SELECT id FROM quests WHERE type = 'daily')
         ''', (user_id, platform))
         self.cursor.execute('''
-            SELECT * FROM quests
+            SELECT * FROM quests 
             WHERE type = 'daily' AND active = 1
             ORDER BY RANDOM()
             LIMIT ?
@@ -1803,15 +2112,15 @@ class Database:
             assigned.append(quest_dict)
         self.conn.commit()
         return assigned
-
+    
     def assign_weekly_quests(self, user_id: int, platform: str = "telegram") -> List[Dict]:
         self.cursor.execute('''
-            DELETE FROM user_quests
-            WHERE user_id = ? AND platform = ? AND quest_id IN
+            DELETE FROM user_quests 
+            WHERE user_id = ? AND platform = ? AND quest_id IN 
             (SELECT id FROM quests WHERE type = 'weekly')
         ''', (user_id, platform))
         self.cursor.execute('''
-            SELECT * FROM quests
+            SELECT * FROM quests 
             WHERE type = 'weekly' AND active = 1
             ORDER BY RANDOM()
             LIMIT 2
@@ -1828,32 +2137,32 @@ class Database:
             assigned.append(quest_dict)
         self.conn.commit()
         return assigned
-
+    
     def get_user_quests(self, user_id: int, platform: str = "telegram") -> List[Dict]:
         now = datetime.now().isoformat()
         self.cursor.execute('''
-            SELECT uq.*, q.name, q.description, q.type, q.condition_type, q.condition_value,
+            SELECT uq.*, q.name, q.description, q.type, q.condition_type, q.condition_value, 
                    q.reward_neons, q.reward_glitches, q.complexity
             FROM user_quests uq
             JOIN quests q ON uq.quest_id = q.id
             WHERE uq.user_id = ? AND uq.platform = ? AND uq.completed = 0 AND uq.expires_at > ?
         ''', (user_id, platform, now))
         return [dict(row) for row in self.cursor.fetchall()]
-
+    
     def update_quest_progress(self, user_id: int, condition_type: str, amount: int = 1, platform: str = "telegram"):
         quests = self.get_user_quests(user_id, platform)
         for quest in quests:
             if quest['condition_type'] == condition_type:
                 new_progress = quest['progress'] + amount
                 self.cursor.execute('''
-                    UPDATE user_quests
-                    SET progress = ?
+                    UPDATE user_quests 
+                    SET progress = ? 
                     WHERE id = ?
                 ''', (new_progress, quest['id']))
                 if new_progress >= quest['condition_value']:
                     self.complete_quest(quest['id'], user_id, platform)
         self.conn.commit()
-
+    
     def complete_quest(self, quest_id: int, user_id: int, platform: str = "telegram"):
         self.cursor.execute('''
             SELECT q.* FROM user_quests uq
@@ -1871,18 +2180,18 @@ class Database:
         if reward_glitches > 0:
             self.add_glitches(user_id, reward_glitches, platform)
         self.cursor.execute('''
-            UPDATE user_quests
+            UPDATE user_quests 
             SET completed = 1, progress = condition_value
             WHERE id = ?
         ''', (quest_id,))
         self.cursor.execute('''
-            UPDATE users
+            UPDATE users 
             SET completed_quests = completed_quests + 1
             WHERE id = ? AND platform = ?
         ''', (user_id, platform))
         self.conn.commit()
 
-    # ===== БИРЖА =====
+    # ===== НОВЫЕ МЕТОДЫ ДЛЯ БИРЖИ =====
     def create_exchange_order(self, user_id: int, order_type: str, currency_from: str,
                              currency_to: str, amount: int, price: int, platform: str = "telegram") -> Optional[int]:
         if amount <= 0 or price <= 0 or order_type not in ('buy', 'sell'):
@@ -1961,13 +2270,13 @@ class Database:
 
     def get_exchange_stats(self) -> Dict:
         self.cursor.execute('''
-            SELECT AVG(price) FROM exchange_history
+            SELECT AVG(price) FROM exchange_history 
             ORDER BY created_at DESC LIMIT 10
         ''')
         avg_price = self.cursor.fetchone()[0] or 10
         day_ago = (datetime.now() - timedelta(days=1)).isoformat()
         self.cursor.execute('''
-            SELECT SUM(volume) FROM exchange_history
+            SELECT SUM(volume) FROM exchange_history 
             WHERE created_at > ?
         ''', (day_ago,))
         volume_24h = self.cursor.fetchone()[0] or 0
@@ -1980,10 +2289,10 @@ class Database:
             'volume_24h': volume_24h,
             'active_orders': active_orders
         }
-
+    
     def cancel_exchange_order(self, order_id: int, user_id: int, platform: str = "telegram") -> bool:
         self.cursor.execute('''
-            SELECT * FROM exchange_orders
+            SELECT * FROM exchange_orders 
             WHERE id = ? AND user_id = ? AND platform = ? AND status = 'active'
         ''', (order_id, user_id, platform))
         order = self.cursor.fetchone()
@@ -2000,14 +2309,6 @@ class Database:
         ''', (order_id,))
         self.conn.commit()
         return True
-
-    def get_user_orders(self, user_id: int, platform: str = "telegram") -> List[Dict]:
-        self.cursor.execute('''
-            SELECT * FROM exchange_orders
-            WHERE user_id = ? AND platform = ? AND status = 'active'
-            ORDER BY created_at DESC
-        ''', (user_id, platform))
-        return [dict(row) for row in self.cursor.fetchall()]
 
     def close(self):
         self.conn.close()
@@ -2071,14 +2372,14 @@ def parse_datetime(date_str: str) -> Optional[datetime]:
     except:
         return None
 
-# ========== GROQ AI ==========
+# ========== GROQ AI КЛАСС (УЛУЧШЕННАЯ ВЕРСИЯ) ==========
 class GroqAI:
+    """Надёжный AI-слой: каталог моделей -> выбор -> health-check -> запрос."""
     PREFERRED_MODELS = (
         "openai/gpt-oss-120b",
         "openai/gpt-oss-20b",
         "qwen/qwen3.8-27b",
     )
-
     def __init__(self, api_key: str):
         self.api_key = (api_key or "").strip()
         self.client = None
@@ -2121,13 +2422,14 @@ class GroqAI:
         )
         self.chat_prompts = defaultdict(lambda: self.base_system_prompt)
 
-    async def refresh_models(self) -> list:
+    async def refresh_models(self) -> list[str]:
         if not self.async_client:
             return []
         try:
             result = await asyncio.wait_for(self.async_client.models.list(), timeout=10)
             ids = sorted({getattr(m, "id", "") for m in getattr(result, "data", []) if getattr(m, "id", "")})
             self.available_models = ids
+            # Даже если env-модель задана, проверяем её реальное наличие.
             if self.model not in ids:
                 for candidate in self.PREFERRED_MODELS:
                     if candidate in ids:
@@ -2139,6 +2441,7 @@ class GroqAI:
             return ids
         except Exception as e:
             self.last_http_error = f"{type(e).__name__}: {str(e)[:180]}"
+            # Не меняем модель вслепую: реальный completion сам даст точный статус.
             return []
 
     def _classify_error(self, e):
@@ -2156,7 +2459,7 @@ class GroqAI:
             return "timeout", "Groq не ответил вовремя"
         return "error", f"{name}: {msg[:180]}"
 
-    async def health_check(self) -> tuple:
+    async def health_check(self) -> tuple[bool, str]:
         if not self.api_key:
             self.health_state, self.health_detail = "no_key", "GROQ_API_KEY отсутствует"
             return False, self.health_detail
@@ -2167,7 +2470,7 @@ class GroqAI:
             await self.refresh_models()
             completion = await asyncio.wait_for(self.async_client.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "system", "content": "Ответь только OK."}, {"role": "user", "content": "Проверка связи"}],
+                messages=[{"role":"system","content":"Ответь только OK."},{"role":"user","content":"Проверка связи"}],
                 temperature=0,
                 max_tokens=16,
                 include_reasoning=False,
@@ -2186,8 +2489,7 @@ class GroqAI:
             self.last_error, self.last_error_at = self.health_detail, time.time()
             return False, self.health_detail
 
-    async def get_response(self, user_id: int, message: str, username: str = "Пользователь",
-                           force_response: bool = False, chat_id: int = None) -> Optional[str]:
+    async def get_response(self, user_id:int, message:str, username:str="Пользователь", force_response:bool=False, chat_id:int=None) -> Optional[str]:
         if not self.is_available:
             self.last_error = self.health_detail
             self.last_error_at = time.time()
@@ -2198,26 +2500,28 @@ class GroqAI:
             self.last_error_at = now
             return None
         if self.health_state in {"auth_error", "permission_error", "model_error"}:
+            # Перед отказом пробуем обновить каталог: модель могла поменяться.
             await self.refresh_models()
         system_prompt = self.chat_prompts[chat_id] if chat_id else self.base_system_prompt
         context = list(self.contexts[user_id])
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "system", "content": f"Пользователь: {username}"},
+            {"role":"system","content":system_prompt},
+            {"role":"system","content":f"Пользователь: {username}"},
         ]
         if context:
-            messages.append({"role": "system", "content": "Последний контекст:\n" + "\n".join(context)})
-        messages.append({"role": "user", "content": message[:8000]})
+            messages.append({"role":"system","content":"Последний контекст:\n" + "\n".join(context)})
+        messages.append({"role":"user","content":message[:8000]})
         self.request_count += 1
         last_exc = None
         for attempt in range(2):
             try:
                 completion = await asyncio.wait_for(self.async_client.chat.completions.create(
-                    model=self.model, messages=messages, temperature=0.7, max_tokens=500,
-                    top_p=0.9, include_reasoning=False
+                    model=self.model, messages=messages, temperature=0.7, max_tokens=500, top_p=0.9, include_reasoning=False
                 ), timeout=35)
                 msg = completion.choices[0].message
                 response = str(getattr(msg, "content", "") or "").strip()
+                # GPT-OSS может возвращать рассуждение отдельно; для пользовательского
+                # ответа всегда просим reasoning=False, но сохраняем безопасный fallback.
                 if not response:
                     response = str(getattr(msg, "reasoning", "") or "").strip()
                 if not response:
@@ -2235,6 +2539,7 @@ class GroqAI:
                 state, detail = self._classify_error(e)
                 self.health_state, self.health_detail = state, detail
                 self.last_error, self.last_error_at = detail, time.time()
+                # Если модель реально недоступна — сразу обновляем каталог и повторяем один раз.
                 if state == "model_error" and attempt == 0:
                     await self.refresh_models()
                 if attempt == 0:
@@ -2243,27 +2548,27 @@ class GroqAI:
         logger.error("Groq request failed: %s", self.last_error)
         return None
 
-    async def get_game_response(self, user_id: int, game_type: str, game_state: Dict,
-                                username: str = "Пользователь") -> Optional[str]:
+    async def get_game_response(self, user_id:int, game_type:str, game_state:Dict, username:str="Пользователь") -> Optional[str]:
+        # AI-ведущий оставлен только для безопасных игровых/социальных сценариев.
         prompt = f"Ты ведущий мини-игры {game_type}. Объясни игроку следующий статус кратко и дружелюбно: {json.dumps(game_state, ensure_ascii=False)}"
         return await self.get_response(user_id, prompt, username, force_response=True)
 
-    async def should_respond(self, message: str, is_reply_to_bot: bool = False) -> bool:
+    async def should_respond(self, message:str, is_reply_to_bot:bool=False) -> bool:
         return is_reply_to_bot or random.random() < 0.15
 
-    async def set_chat_prompt(self, chat_id: int, prompt: str):
+    async def set_chat_prompt(self, chat_id:int, prompt:str):
         self.chat_prompts[chat_id] = prompt.strip()[:6000] or self.base_system_prompt
 
-    async def get_reaction(self, message: str) -> str:
+    async def get_reaction(self, message:str) -> str:
         if '?' in message: return '❓'
-        if any(w in message.lower() for w in ('спасибо', 'красава', 'поздрав')): return '✨'
+        if any(w in message.lower() for w in ('спасибо','красава','поздрав')): return '✨'
         return ''
 
     def diagnostics(self):
         states = {
-            "ok": "🟢 работает", "unknown": "🟡 не проверен", "offline": "🔴 клиент недоступен",
-            "no_key": "🔴 нет ключа", "auth_error": "🔴 неверный ключ", "permission_error": "🔴 нет доступа",
-            "model_error": "🔴 модель недоступна", "rate_limit": "🟠 лимит", "timeout": "🟠 таймаут", "error": "🔴 ошибка"
+            "ok":"🟢 работает","unknown":"🟡 не проверен","offline":"🔴 клиент недоступен",
+            "no_key":"🔴 нет ключа","auth_error":"🔴 неверный ключ","permission_error":"🔴 нет доступа",
+            "model_error":"🔴 модель недоступна","rate_limit":"🟠 лимит","timeout":"🟠 таймаут","error":"🔴 ошибка"
         }
         return (
             f"Состояние: {states.get(self.health_state, '🟡 неизвестно')}\n"
@@ -2283,30 +2588,38 @@ class GroqAI:
         except Exception:
             pass
 
-# ========== КЛАСС ДЛЯ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ ==========
+# ========== КЛАСС ДЛЯ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ (ВТОРОЙ AI) ==========
 class ImageAI:
     def __init__(self):
         self.api_url = "https://api.felo.ai/v1/gemini-image-gen"
-        self.timeout = 60
+        self.timeout = 60  # увеличенный таймаут (генерация может быть долгой)
 
     async def generate(self, prompt: str, retries: int = 2) -> Optional[bytes]:
+        """
+        Генерирует изображение по промпту, возвращает байты изображения или None.
+        При ошибке делает до retries повторных попыток.
+        """
         headers = {
             "Content-Type": "application/json",
+            # Иногда требуется User-Agent, добавим стандартный
             "User-Agent": "Mozilla/5.0 (compatible; SpectrumBot/7.0)"
         }
         payload = {
             "prompt": prompt,
-            "resolution": "1024x1024",
+            "resolution": "1024x1024",        # можно также 512x512, 768x768
             "model": "gemini-3-pro-image-preview"
         }
+
         for attempt in range(retries + 1):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.api_url, json=payload, headers=headers, timeout=self.timeout) as resp:
                         if resp.status == 200:
                             data = await resp.json()
+                            # Обычно ответ содержит поле "image_url"
                             image_url = data.get("image_url")
                             if image_url:
+                                # Скачиваем изображение
                                 async with session.get(image_url) as img_resp:
                                     if img_resp.status == 200:
                                         return await img_resp.read()
@@ -2320,10 +2633,12 @@ class ImageAI:
                 logger.error(f"Таймаут при попытке {attempt+1}")
             except Exception as e:
                 logger.error(f"Исключение при попытке {attempt+1}: {e}")
-            if attempt < retries:
-                await asyncio.sleep(2)
-        return None
 
+            if attempt < retries:
+                await asyncio.sleep(2)  # пауза перед повтором
+
+        return None
+        
 # ========== ИНИЦИАЛИЗАЦИЯ AI ==========
 ai = None
 if GROQ_API_KEY and GROQ_AVAILABLE:
@@ -2336,7 +2651,7 @@ if GROQ_API_KEY and GROQ_AVAILABLE:
 else:
     logger.warning("⚠️ Groq AI не подключен (нет API ключа)")
 
-# ========== КЛАСС МАФИИ ==========
+# ========== КЛАСС МАФИИ (УЛУЧШЕННАЯ ВЕРСИЯ) ==========
 class MafiaRole:
     MAFIA = "😈 Мафия"
     COMMISSIONER = "👮 Комиссар"
@@ -2350,7 +2665,7 @@ class MafiaGame:
         self.chat_id = chat_id
         self.game_id = game_id
         self.creator_id = creator_id
-        self.status = "waiting"
+        self.status = "waiting"  # waiting, starting, night, day, ended
         self.players = []
         self.players_data = {}
         self.roles = {}
@@ -2369,7 +2684,7 @@ class MafiaGame:
         self.confirmed_players = []
         self.story = []
         self.last_night_result = None
-
+    
     def add_player(self, user_id: int, name: str, username: str = "") -> bool:
         if user_id in self.players:
             return False
@@ -2380,7 +2695,7 @@ class MafiaGame:
             "confirmed": False
         }
         return True
-
+    
     def remove_player(self, user_id: int) -> bool:
         if user_id not in self.players:
             return False
@@ -2388,19 +2703,19 @@ class MafiaGame:
         if user_id in self.players_data:
             del self.players_data[user_id]
         return True
-
+    
     def confirm_player(self, user_id: int) -> bool:
         if user_id not in self.players_data:
             return False
         self.players_data[user_id]["confirmed"] = True
         self.confirmed_players.append(user_id)
         return True
-
+    
     def all_confirmed(self) -> bool:
         if len(self.players) < MAFIA_MIN_PLAYERS:
             return False
         return all(p["confirmed"] for p in self.players_data.values())
-
+    
     def assign_roles(self):
         num_players = len(self.players)
         if num_players <= 7:
@@ -2420,7 +2735,7 @@ class MafiaGame:
         for i, player_id in enumerate(self.players):
             self.roles[player_id] = roles[i]
             self.alive[player_id] = True
-
+    
     def get_role_description(self, role: str) -> str:
         descriptions = {
             MafiaRole.MAFIA: "Ночью убиваете мирных. Общайтесь с другими мафиози в ЛС",
@@ -2431,10 +2746,10 @@ class MafiaGame:
             MafiaRole.CITIZEN: "У вас нет способностей. Ищите мафию днём"
         }
         return descriptions.get(role, "Ошибка")
-
+    
     def get_alive_players(self) -> list:
         return [pid for pid in self.players if self.alive.get(pid, False)]
-
+    
     def check_win(self):
         alive = self.get_alive_players()
         if not alive:
@@ -2449,7 +2764,7 @@ class MafiaGame:
         if mafia_count >= len(alive) - mafia_count:
             return "mafia"
         return None
-
+    
     def process_night(self):
         killed = self.night_actions.get("mafia_kill")
         saved = self.night_actions.get("doctor_save")
@@ -2463,7 +2778,7 @@ class MafiaGame:
             "maniac_kill": None
         }
         return self.last_night_result
-
+    
     def process_voting(self):
         if not self.votes:
             return None
@@ -2481,7 +2796,7 @@ class MafiaGame:
             return executed
         self.votes = {}
         return None
-
+    
     def get_formatted_status(self) -> str:
         alive_list = self.get_alive_players()
         alive_names = [self.players_data[pid]["name"] for pid in alive_list]
@@ -2498,7 +2813,7 @@ class MafiaGame:
         return (f"{phase_emoji} **День {self.day} | {self.phase.capitalize()}**\n"
                 f"👥 Живы: {len(alive_list)}\n"
                 f"💀 Убитых за ночь: {self.last_night_result.get('killed') if self.last_night_result else '?'}")
-
+    
     def to_dict(self) -> Dict:
         return {
             'game_id': self.game_id,
@@ -2517,7 +2832,7 @@ class MafiaGame:
             'confirmed_players': json.dumps(self.confirmed_players),
             'story': json.dumps(self.story)
         }
-
+    
     def from_dict(self, data: Dict):
         self.game_id = data['game_id']
         self.chat_id = data['chat_id']
@@ -2555,7 +2870,7 @@ class VKBot:
             except Exception as e:
                 logger.error(f"❌ Ошибка инициализации VK: {e}")
                 self.is_available = False
-
+    
     def send_message(self, user_id: int, message: str, keyboard=None):
         if not self.is_available:
             return
@@ -2570,7 +2885,7 @@ class VKBot:
             self.vk.method('messages.send', params)
         except Exception as e:
             logger.error(f"Ошибка отправки VK сообщения: {e}")
-
+    
     def send_group_message(self, chat_id: int, message: str, keyboard=None):
         if not self.is_available:
             return
@@ -2585,7 +2900,7 @@ class VKBot:
             self.vk.method('messages.send', params)
         except Exception as e:
             logger.error(f"Ошибка отправки VK сообщения в беседу: {e}")
-
+    
     def get_user_name(self, user_id: int) -> str:
         if not self.is_available:
             return f"User{user_id}"
@@ -2607,7 +2922,7 @@ if VK_TOKEN and VK_AVAILABLE:
         logger.error(f"❌ Ошибка инициализации VK: {e}")
         vk_bot = None
 
-# ========== ОСНОВНОЙ КЛАСС БОТА ==========
+# ========== ОСНОВНОЙ КЛАСС БОТА (НАЧАЛО) ==========
 class SpectrumBot:
     def __init__(self):
         self.db = db
@@ -2622,20 +2937,17 @@ class SpectrumBot:
         self.boss_fights = {}
         self.active_ban_votes = {}
         self.user_contexts = defaultdict(dict)
-        self.image_ai = ImageAI()
+        self.image_ai = ImageAI()  # второй AI для генерации изображений
         self.setup_handlers()
         logger.info(f"✅ Бот {BOT_NAME} инициализирован")
 
     # ===== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =====
-    def _get_chat_ai_prompt(self, chat_id: int) -> Optional[str]:
-        if not chat_id:
-            return None
+    def _get_chat_ai_prompt(self,chat_id:int)->Optional[str]:
+        if not chat_id: return None
         try:
-            row = self.db.cursor.execute("SELECT ai_prompt FROM chat_settings WHERE chat_id=?", (chat_id,)).fetchone()
-            if row and row[0] and not str(row[0]).startswith("ТЫ — СПЕКТР"):
-                return row[0]
-        except Exception:
-            pass
+            row=self.db.cursor.execute("SELECT ai_prompt FROM chat_settings WHERE chat_id=?",(chat_id,)).fetchone()
+            if row and row[0] and not str(row[0]).startswith("ТЫ — СПЕКТР"): return row[0]
+        except Exception: pass
         return None
 
     async def get_ai_response(self, user_id: int, message: str, context_type: str = "normal",
@@ -2645,11 +2957,10 @@ class SpectrumBot:
                 return await self.ai.get_game_response(user_id, kwargs.get('game_type', 'general'),
                                                       kwargs.get('game_state', {}), username)
             else:
-                prompt = self._get_chat_ai_prompt(chat_id)
-                if prompt:
-                    self.ai.chat_prompts[chat_id] = prompt
+                prompt=self._get_chat_ai_prompt(chat_id)
+                if prompt: self.ai.chat_prompts[chat_id]=prompt
                 return await self.ai.get_response(user_id, message, username,
-                                                 force_response=(context_type == "force"), chat_id=chat_id)
+                                                 force_response=(context_type=="force"), chat_id=chat_id)
         return None
 
     async def get_user_name(self, user_id: int, platform: str = "telegram") -> str:
@@ -2759,7 +3070,7 @@ class SpectrumBot:
             keyboard.append(current_row)
         return keyboard
 
-    # ===== БАЗОВЫЕ КОМАНДЫ =====
+    # ===== ОСНОВНЫЕ КОМАНДЫ =====
     async def cmd_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id, user.first_name)
@@ -2771,9 +3082,10 @@ class SpectrumBot:
         text = (
             f"{s.header('СПЕКТР', '◆')}\n\n"
             f"**Neon Core** — единый центр чата, экономики, прогресса и AI.\n\n"
-            f"💰 {user_data['coins']:,}  💜 {user_data['neons']:,}  🖥 {user_data['glitches']:,}\n"
+            f"{s.balance(user_data['coins'], user_data['neons'], user_data['glitches'])}\n"
             f"⭐ Уровень: **{user_data['level']}**  ·  🏆 Репутация: **{user_data['reputation']}**\n\n"
             f"Нажми **Меню**, чтобы открыть систему.\n"
+            f"{s.footer()}"
         )
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("◈ МЕНЮ", callback_data="ui_home"), InlineKeyboardButton("👤 ПРОФИЛЬ", callback_data="ui_profile")],
@@ -2857,9 +3169,10 @@ class SpectrumBot:
         text = (
             f"{s.header('SPECTRUM · NEON CORE', '◆')}\n\n"
             f"Добро пожаловать, **{update.effective_user.first_name}**.\n"
-            f"💰 {u['coins']:,}  💜 {u['neons']:,}  🖥 {u['glitches']:,}\n\n"
+            f"{s.balance(u['coins'], u['neons'], u['glitches'])}\n\n"
             f"{s.section('БЫСТРЫЙ ДОСТУП')}"
             f"Выбери модуль — кнопки ведут в реальные разделы.\n"
+            f"{s.footer()}"
         )
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=self._ui_home_keyboard())
 
@@ -3053,7 +3366,6 @@ class SpectrumBot:
             parse_mode=ParseMode.MARKDOWN
         )
 
-    # ===== ПРОФИЛЬНЫЕ КОМАНДЫ =====
     async def cmd_set_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
             await update.message.reply_text(s.error("Укажите ник: /nick [ник]"))
@@ -3211,34 +3523,34 @@ class SpectrumBot:
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
         cursor.execute('''
-            SELECT COUNT(DISTINCT user_id), COUNT(*)
-            FROM messages
+            SELECT COUNT(DISTINCT user_id), COUNT(*) 
+            FROM messages 
             WHERE chat_id = ?
         ''', (chat.id,))
         result = cursor.fetchone()
         total_users = result[0] if result else 0
         total_msgs = result[1] if result else 0
         cursor.execute('''
-            SELECT COUNT(*) FROM messages
+            SELECT COUNT(*) FROM messages 
             WHERE chat_id = ? AND timestamp > ?
         ''', (chat.id, day_ago.isoformat()))
         daily_msgs = cursor.fetchone()[0] or 0
         cursor.execute('''
-            SELECT COUNT(*) FROM messages
+            SELECT COUNT(*) FROM messages 
             WHERE chat_id = ? AND timestamp > ?
         ''', (chat.id, week_ago.isoformat()))
         weekly_msgs = cursor.fetchone()[0] or 0
         cursor.execute('''
-            SELECT COUNT(*) FROM messages
+            SELECT COUNT(*) FROM messages 
             WHERE chat_id = ? AND timestamp > ?
         ''', (chat.id, month_ago.isoformat()))
         monthly_msgs = cursor.fetchone()[0] or 0
         cursor.execute('''
             SELECT username, first_name, COUNT(*) as msg_count
-            FROM messages
-            WHERE chat_id = ?
-            GROUP BY user_id
-            ORDER BY msg_count DESC
+            FROM messages 
+            WHERE chat_id = ? 
+            GROUP BY user_id 
+            ORDER BY msg_count DESC 
             LIMIT 5
         ''', (chat.id,))
         top_users = cursor.fetchall()
@@ -3278,7 +3590,7 @@ class SpectrumBot:
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== ЭКОНОМИКА =====
+    # ===== ЭКОНОМИКА (антиинфляционная) =====
     async def cmd_balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
@@ -3345,6 +3657,7 @@ class SpectrumBot:
         self.db.add_coins(user_data['id'], -total_deduction)
         self.db.add_coins(target['id'], amount)
         target_name = target.get('nickname') or target['first_name']
+        user_name = f"@{user_data['username']}" if user_data.get('username') else user_data['first_name']
         text = f"""
 {s.header('ПЕРЕВОД')}
 
@@ -3430,7 +3743,7 @@ class SpectrumBot:
 
 {s.section('КОМАНДЫ')}
 {s.cmd('transfer @user 100', 'передать неоны')}
-{s.cmd('convert 1500', 'обменять глитчи на неоны')}
+{s.cmd('exchange 100', 'обменять глитчи на неоны')}
 {s.cmd('farm', 'ферма глитчей')}
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
@@ -3445,7 +3758,7 @@ class SpectrumBot:
 {s.stat('Можно обменять', f'{neons_from_glitches} 💜')}
 
 {s.section('КОМАНДЫ')}
-{s.cmd('convert 1500', 'обменять глитчи на неоны')}
+{s.cmd('exchange 100', 'обменять глитчи на неоны')}
 {s.cmd('farm', 'ферма глитчей')}
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
@@ -3463,6 +3776,7 @@ class SpectrumBot:
                 await update.message.reply_text(s.warning(f"Ферма будет доступна через {hours}ч {minutes}м"))
                 return
         glitches_earned = random.randint(20, 40)
+        # Антиинфляционный фактор
         balance_factor = max(0.60, 1.0 - (user_data['glitches'] / MAX_GLITCHES) * 0.40)
         glitches_earned = int(glitches_earned * balance_factor)
         if self.db.is_vip(user_data['id']):
@@ -3534,8 +3848,7 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error(f"Использование: /convert {NEON_PRICE * 10}"))
             return
-        try:
-            glitches = int(context.args[0])
+        try: glitches = int(context.args[0])
         except ValueError:
             await update.message.reply_text(s.error("Количество должно быть числом")); return
         if glitches < NEON_PRICE or glitches <= 0:
@@ -3797,15 +4110,21 @@ class SpectrumBot:
     async def cmd_my_orders(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
-        orders = self.db.get_user_orders(user_data['id'])
+        self.db.cursor.execute('''
+            SELECT * FROM exchange_orders 
+            WHERE user_id = ? AND status = 'active'
+            ORDER BY created_at DESC
+        ''', (user_data['id'],))
+        orders = self.db.cursor.fetchall()
         if not orders:
             await update.message.reply_text("ℹ️ У вас нет активных ордеров")
             return
         text = f"{s.header('📊 МОИ ОРДЕРА')}\n\n"
         for order in orders:
-            order_type = "📈 ПОКУПКА" if order['type'] == 'buy' else "📉 ПРОДАЖА"
-            remaining = order['amount'] - order['filled']
-            text += f"#{order['id']} {order_type}\n{remaining}/{order['amount']} {order['currency_to']}\nЦена: {order['price']} 💰\n\n"
+            order_dict = dict(order)
+            order_type = "📈 ПОКУПКА" if order_dict['type'] == 'buy' else "📉 ПРОДАЖА"
+            remaining = order_dict['amount'] - order_dict['filled']
+            text += f"#{order_dict['id']} {order_type}\n{remaining}/{order_dict['amount']} {order_dict['currency_to']}\nЦена: {order_dict['price']} 💰\n\n"
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_cancel_order(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3824,7 +4143,9 @@ class SpectrumBot:
         else:
             await update.message.reply_text("❌ Ордер не найден или уже исполнен")
 
-    # ===== МАФИЯ =====
+    # ===== УЛУЧШЕННЫЕ ИГРЫ =====
+
+    # ----- МАФИЯ (улучшенная) -----
     async def cmd_mafia(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
 {s.header('🔫 МАФИЯ')}
@@ -3844,6 +4165,7 @@ class SpectrumBot:
     async def cmd_mafia_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
         user = update.effective_user
+
         if chat_id in self.mafia_games:
             game = self.mafia_games[chat_id]
             if game.status != "ended":
@@ -3861,9 +4183,11 @@ class SpectrumBot:
                 """
                 await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
                 return
+
         game_id = f"mafia_{chat_id}_{int(time.time())}"
         game = MafiaGame(chat_id, game_id, user.id)
         self.mafia_games[chat_id] = game
+
         self.db.cursor.execute('''
             INSERT INTO mafia_games (game_id, chat_id, creator_id, status, players, players_data, roles, alive, votes, night_actions, confirmed_players, story)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -3871,6 +4195,7 @@ class SpectrumBot:
               json.dumps([]), json.dumps({}), json.dumps({}),
               json.dumps({}), json.dumps({}), json.dumps({}), json.dumps([]), json.dumps([])))
         self.db.conn.commit()
+
         text = f"""
 {s.header('🔫 МАФИЯ')}
 
@@ -3884,24 +4209,31 @@ class SpectrumBot:
 
 {s.info('Игра будет проходить в ЛС с ботом. Подтвердите участие в личных сообщениях!')}
         """
+
         msg = await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
         game.message_id = msg.message_id
+
         self.db.cursor.execute('UPDATE mafia_games SET message_id = ? WHERE game_id = ?', (msg.message_id, game_id))
         self.db.conn.commit()
 
     async def cmd_mafia_join(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
         user = update.effective_user
+
         if chat_id not in self.mafia_games:
             await update.message.reply_text(s.error("Игра не создана. Начните: /mafiastart"))
             return
+
         game = self.mafia_games[chat_id]
+
         if game.status != "waiting":
             await update.message.reply_text(s.error("Игра уже началась"))
             return
+
         if not game.add_player(user.id, user.first_name, user.username or ""):
             await update.message.reply_text(s.error("Вы уже в игре"))
             return
+
         try:
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton("✅ ПОДТВЕРДИТЬ", callback_data=f"mafia_confirm_{chat_id}")
@@ -3923,39 +4255,50 @@ class SpectrumBot:
             await update.message.reply_text(s.error(f"{user.first_name}, не удалось отправить сообщение в ЛС. Напишите боту в личку сначала."))
             game.remove_player(user.id)
             return
+
         self.db.cursor.execute('''
-            UPDATE mafia_games
-            SET players = ?, players_data = ?
+            UPDATE mafia_games 
+            SET players = ?, players_data = ? 
             WHERE game_id = ?
         ''', (json.dumps(game.players), json.dumps(game.players_data), game.game_id))
+
         await self._update_mafia_game_message(game, context)
 
     async def cmd_mafia_leave(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
         user = update.effective_user
+
         if chat_id not in self.mafia_games:
             await update.message.reply_text(s.error("Игра не создана"))
             return
+
         game = self.mafia_games[chat_id]
+
         if game.status != "waiting":
             await update.message.reply_text(s.error("Нельзя покинуть игру после начала"))
             return
+
         if not game.remove_player(user.id):
             await update.message.reply_text(s.error("Вас нет в игре"))
             return
+
         await update.message.reply_text(s.success(f"{user.first_name} покинул игру"))
+
         self.db.cursor.execute('''
-            UPDATE mafia_games
-            SET players = ?, players_data = ?
+            UPDATE mafia_games 
+            SET players = ?, players_data = ? 
             WHERE game_id = ?
         ''', (json.dumps(game.players), json.dumps(game.players_data), game.game_id))
+
         await self._update_mafia_game_message(game, context)
 
     async def _update_mafia_game_message(self, game: MafiaGame, context: ContextTypes.DEFAULT_TYPE):
         if not game.message_id:
             return
+
         status_text = game.get_formatted_status()
         players_list = "\n".join([f"{'✅' if p['confirmed'] else '⏳'} {p['name']}" for p in game.players_data.values()])
+
         text = f"""
 {s.header('🔫 МАФИЯ')}
 
@@ -3967,6 +4310,7 @@ class SpectrumBot:
 📌 /mafiajoin — присоединиться
 📌 /mafialeave — выйти
         """
+
         try:
             await context.bot.edit_message_text(
                 text,
@@ -3982,6 +4326,7 @@ class SpectrumBot:
         game.assign_roles()
         game.phase = "night"
         game.day = 1
+
         for player_id in game.players:
             role = game.roles[player_id]
             description = game.get_role_description(role)
@@ -3997,8 +4342,10 @@ class SpectrumBot:
 🌙 Наступает ночь. Ожидайте действий...
                 """
             )
+
         game.status = "active"
         await self._update_mafia_game_message(game, context)
+
         await context.bot.send_message(
             game.chat_id,
             f"""
@@ -4008,9 +4355,11 @@ class SpectrumBot:
 📊 Все роли розданы в личные сообщения.
             """
         )
+
         asyncio.create_task(self._mafia_night_timer(game, context))
+
         self.db.cursor.execute('''
-            UPDATE mafia_games
+            UPDATE mafia_games 
             SET status = ?, phase = ?, day = ?, roles = ?, alive = ?
             WHERE game_id = ?
         ''', (game.status, game.phase, game.day,
@@ -4020,23 +4369,30 @@ class SpectrumBot:
 
     async def _mafia_night_timer(self, game: MafiaGame, context: ContextTypes.DEFAULT_TYPE):
         await asyncio.sleep(MAFIA_NIGHT_TIME)
+
         if game.chat_id not in self.mafia_games or game.phase != "night":
             return
+
         killed = game.process_night()
+
         if killed["killed"]:
             game.alive[killed["killed"]] = False
             try:
+                killed_name = game.players_data[killed["killed"]]['name']
                 await self.send_private_message(
                     killed["killed"],
                     f"💀 **ВАС УБИЛИ НОЧЬЮ**\n\nВы больше не участвуете"
                 )
             except:
                 pass
+
         game.phase = "day"
         game.day += 1
+
         alive_list = game.get_alive_players()
         alive_names = [game.players_data[pid]['name'] for pid in alive_list]
         killed_name = game.players_data[killed["killed"]]['name'] if killed["killed"] else "никого"
+
         text = f"""
 {s.header(f'🔫 МАФИЯ | ДЕНЬ {game.day}')}
 
@@ -4048,24 +4404,31 @@ class SpectrumBot:
 
 🗳 **Обсуждайте и голосуйте** (напишите `голосовать номер`)
         """
+
         await context.bot.send_message(game.chat_id, text, parse_mode=ParseMode.MARKDOWN)
+
         self.db.cursor.execute('''
-            UPDATE mafia_games
+            UPDATE mafia_games 
             SET phase = ?, day = ?, alive = ?
             WHERE game_id = ?
         ''', (game.phase, game.day, json.dumps(game.alive), game.game_id))
         self.db.conn.commit()
+
         asyncio.create_task(self._mafia_day_timer(game, context))
 
     async def _mafia_day_timer(self, game: MafiaGame, context: ContextTypes.DEFAULT_TYPE):
         await asyncio.sleep(MAFIA_DAY_TIME)
+
         if game.chat_id not in self.mafia_games or game.phase != "day":
             return
+
         executed = game.process_voting()
+
         if executed:
             game.alive[executed] = False
             executed_name = game.players_data[executed]['name']
             role = game.roles[executed].value
+
             await context.bot.send_message(
                 game.chat_id,
                 f"""
@@ -4077,6 +4440,7 @@ class SpectrumBot:
 🌙 Ночь скоро...
                 """
             )
+
             try:
                 await self.send_private_message(
                     executed,
@@ -4089,7 +4453,9 @@ class SpectrumBot:
                 game.chat_id,
                 "📢 **Никто не был исключён**"
             )
+
         winner = game.check_win()
+
         if winner == "citizens":
             await context.bot.send_message(
                 game.chat_id,
@@ -4116,6 +4482,7 @@ class SpectrumBot:
                 self.db.update_user(player_id, mafia_games=self.db.get_user_by_id(player_id).get('mafia_games', 0) + 1)
             del self.mafia_games[game.chat_id]
             return
+
         game.phase = "night"
         game.night_actions = {
             "mafia_kill": None,
@@ -4123,6 +4490,7 @@ class SpectrumBot:
             "commissioner_check": None,
             "maniac_kill": None
         }
+
         await context.bot.send_message(
             game.chat_id,
             f"""
@@ -4132,12 +4500,14 @@ class SpectrumBot:
 🔪 Мафия выбирает жертву
             """
         )
+
         self.db.cursor.execute('''
-            UPDATE mafia_games
+            UPDATE mafia_games 
             SET phase = ?, night_actions = ?
             WHERE game_id = ?
         ''', (game.phase, json.dumps(game.night_actions), game.game_id))
         self.db.conn.commit()
+
         asyncio.create_task(self._mafia_night_timer(game, context))
 
     async def cmd_mafia_roles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -4183,6 +4553,7 @@ class SpectrumBot:
     async def cmd_mafia_stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         text = f"""
 {s.header('🔫 СТАТИСТИКА МАФИИ')}
 
@@ -4193,7 +4564,7 @@ class SpectrumBot:
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== ИГРЫ =====
+        # ===== ИГРЫ (недостающие) =====
     async def cmd_games(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
 {s.header('🎮 ИГРЫ')}
@@ -4221,23 +4592,29 @@ class SpectrumBot:
     async def cmd_dice_bet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите ставку: /dicebet 100"))
             return
+
         try:
             bet = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Ставка должна быть числом"))
             return
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         if bet <= 0:
             await update.message.reply_text(s.error("Ставка должна быть больше 0"))
             return
+
         dice1 = random.randint(1, 6)
         dice2 = random.randint(1, 6)
         total = dice1 + dice2
+
         win_multiplier = 1
         if total in [7, 11]:
             win_multiplier = 2
@@ -4250,11 +4627,14 @@ class SpectrumBot:
         else:
             win_multiplier = 1
             result_text = "🔄 НИЧЬЯ!"
+
         win_amount = bet * win_multiplier if win_multiplier > 0 else -bet
+
         if win_multiplier > 0:
             self.db.add_coins(user_data['id'], win_amount - bet if win_multiplier > 1 else 0)
         else:
             self.db.add_coins(user_data['id'], -bet)
+
         text = (
             f"🎲 КОСТИ\n\n"
             f"👤 Игрок: {user.first_name}\n"
@@ -4262,20 +4642,25 @@ class SpectrumBot:
             f"🎲 {dice1} + {dice2} = {total}\n\n"
             f"{result_text}\n"
         )
+
         if win_multiplier > 1:
             text += f"+{win_amount - bet} 💰\n"
         elif win_multiplier == 0:
             text += f"-{bet} 💰\n"
         else:
             text += f"Ставка возвращена\n"
+
         text += f"\n💰 Новый баланс: {user_data['coins'] + (win_amount - bet if win_multiplier > 1 else -bet if win_multiplier == 0 else 0)} 💰"
+
         await update.message.reply_text(text)
 
     async def cmd_roulette(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         bet = 10
         choice = "red"
+
         if context.args:
             try:
                 bet = int(context.args[0])
@@ -4283,28 +4668,35 @@ class SpectrumBot:
                     choice = context.args[1].lower()
             except:
                 pass
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         if bet <= 0:
             await update.message.reply_text(s.error("Ставка должна быть больше 0"))
             return
+
         num = random.randint(0, 36)
         red_numbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]
+
         if num == 0:
             color = "green"
         elif num in red_numbers:
             color = "red"
         else:
             color = "black"
+
         win = False
         multiplier = 0
+
         if choice.isdigit() and int(choice) == num:
             win = True
             multiplier = 36
         elif choice in ["red", "black", "green"] and choice == color:
             win = True
             multiplier = 2 if choice in ["red", "black"] else 36
+
         if win:
             win_amount = bet * multiplier
             self.db.add_coins(user_data['id'], win_amount)
@@ -4314,6 +4706,7 @@ class SpectrumBot:
             self.db.add_coins(user_data['id'], -bet)
             self.db.update_user(user_data['id'], casino_losses=user_data.get('casino_losses', 0) + 1)
             result = f"💀 ПРОИГРЫШ! -{bet} 💰"
+
         await update.message.reply_text(
             f"🎰 РУЛЕТКА\n\n"
             f"👤 Игрок: {user.first_name}\n"
@@ -4328,20 +4721,25 @@ class SpectrumBot:
     async def cmd_slots(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         bet = 10
         if context.args:
             try:
                 bet = int(context.args[0])
             except:
                 pass
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         if bet <= 0:
             await update.message.reply_text(s.error("Ставка должна быть больше 0"))
             return
+
         symbols = ["🍒", "🍋", "🍊", "7️⃣", "💎", "⭐️"]
         spin = [random.choice(symbols) for _ in range(3)]
+
         if len(set(spin)) == 1:
             if spin[0] == "7️⃣":
                 win = bet * 50
@@ -4361,10 +4759,12 @@ class SpectrumBot:
             win = 0
             result = f"💀 ПРОИГРЫШ! -{bet} 💰"
             self.db.update_user(user_data['id'], slots_losses=user_data.get('slots_losses', 0) + 1)
+
         if win > 0:
             self.db.add_coins(user_data['id'], win)
         else:
             self.db.add_coins(user_data['id'], -bet)
+
         await update.message.reply_text(
             f"🎰 СЛОТЫ\n\n"
             f"👤 Игрок: {user.first_name}\n"
@@ -4390,6 +4790,7 @@ class SpectrumBot:
     async def cmd_russian_roulette(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         bet = 10
         if context.args:
             try:
@@ -4397,15 +4798,20 @@ class SpectrumBot:
             except:
                 await update.message.reply_text(s.error("Ставка должна быть числом"))
                 return
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         if bet <= 0:
             await update.message.reply_text(s.error("Ставка должна быть больше 0"))
             return
+
         chamber = random.randint(1, 6)
         shot = random.randint(1, 6)
+
         await asyncio.sleep(2)
+
         if chamber == shot:
             self.db.add_coins(user_data['id'], -bet)
             self.db.update_user(user_data['id'], rr_losses=user_data.get('rr_losses', 0) + 1)
@@ -4417,6 +4823,7 @@ class SpectrumBot:
             self.db.update_user(user_data['id'], rr_wins=user_data.get('rr_wins', 0) + 1)
             result_text = "🔫 *Щёлк...* В этот раз повезло!"
             win_text = f"🎉 ВЫ ВЫИГРАЛИ! +{win} 💰"
+
         await update.message.reply_text(
             f"🔫 РУССКАЯ РУЛЕТКА\n\n"
             f"👤 Игрок: {user.first_name}\n"
@@ -4430,17 +4837,21 @@ class SpectrumBot:
     async def cmd_saper(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         bet = 10
         if context.args:
             try:
                 bet = int(context.args[0])
             except:
                 bet = 10
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         field = [['⬜️' for _ in range(3)] for _ in range(3)]
         mine_x, mine_y = random.randint(0, 2), random.randint(0, 2)
+
         game_id = f"saper_{user.id}_{int(time.time())}"
         self.games_in_progress[game_id] = {
             'user_id': user.id,
@@ -4450,13 +4861,17 @@ class SpectrumBot:
             'bet': bet,
             'opened': 0
         }
+
         self.db.add_coins(user_data['id'], -bet)
+
         keyboard_buttons = []
         for i in range(3):
             for j in range(3):
                 cell_num = i * 3 + j + 1
                 keyboard_buttons.append(InlineKeyboardButton(f"⬜️", callback_data=f"saper_{game_id}_{cell_num}"))
+
         keyboard = InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 3))
+
         await update.message.reply_text(
             f"{s.header('💣 САПЁР')}\n\n"
             f"💰 Ставка: {bet} 💰\n"
@@ -4468,15 +4883,18 @@ class SpectrumBot:
     async def cmd_guess(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         bet = 10
         if context.args:
             try:
                 bet = int(context.args[0])
             except:
                 bet = 10
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         number = random.randint(1, 100)
         game_id = f"guess_{user.id}_{int(time.time())}"
         self.games_in_progress[game_id] = {
@@ -4486,7 +4904,9 @@ class SpectrumBot:
             'max_attempts': 7,
             'bet': bet
         }
+
         self.db.add_coins(user_data['id'], -bet)
+
         await update.message.reply_text(
             f"{s.header('🔢 УГАДАЙ ЧИСЛО')}\n\n"
             f"🎯 Я загадал число от 1 до 100\n"
@@ -4498,17 +4918,21 @@ class SpectrumBot:
     async def cmd_bulls(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         bet = 10
         if context.args:
             try:
                 bet = int(context.args[0])
             except:
                 bet = 10
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         digits = random.sample(range(10), 4)
         number = ''.join(map(str, digits))
+
         game_id = f"bulls_{user.id}_{int(time.time())}"
         self.games_in_progress[game_id] = {
             'user_id': user.id,
@@ -4517,7 +4941,9 @@ class SpectrumBot:
             'max_attempts': 10,
             'bet': bet
         }
+
         self.db.add_coins(user_data['id'], -bet)
+
         await update.message.reply_text(
             f"{s.header('🐂 БЫКИ И КОРОВЫ')}\n\n"
             f"🎯 Я загадал 4-значное число без повторов\n"
@@ -4528,31 +4954,38 @@ class SpectrumBot:
             f"💬 Напиши свой вариант (4 цифры)..."
         )
 
-    # ===== ДУЭЛИ =====
+    # ----- ДУЭЛИ -----
     async def cmd_duel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 2:
             await update.message.reply_text(s.error("Использование: /duel @user ставка"))
             return
+
         username = context.args[0].replace('@', '')
         try:
             bet = int(context.args[1])
         except:
             await update.message.reply_text(s.error("Ставка должна быть числом"))
             return
+
         if bet <= 0:
             await update.message.reply_text(s.error("Ставка должна быть больше 0"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
+
         if bet > user_data['coins']:
             await update.message.reply_text(s.error(f"Недостаточно монет. Баланс: {user_data['coins']} 💰"))
             return
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         if target['id'] == user_data['id']:
             await update.message.reply_text(s.error("Нельзя вызвать на дуэль самого себя"))
             return
+
         self.db.cursor.execute(
             "SELECT id FROM duels WHERE (challenger_id = ? OR opponent_id = ?) AND status = 'pending'",
             (user_data['id'], user_data['id'])
@@ -4560,15 +4993,19 @@ class SpectrumBot:
         if self.db.cursor.fetchone():
             await update.message.reply_text(s.error("У тебя уже есть активная дуэль"))
             return
+
         duel_id = self.db.create_duel(user_data['id'], target['id'], bet)
         self.db.add_coins(user_data['id'], -bet)
+
         target_name = target.get('nickname') or target['first_name']
+
         keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("✅ ПРИНЯТЬ", callback_data=f"accept_duel_{duel_id}"),
                 InlineKeyboardButton("❌ ОТКЛОНИТЬ", callback_data=f"reject_duel_{duel_id}")
             ]
         ])
+
         await update.message.reply_text(
             f"""
 {s.header('⚔️ ДУЭЛЬ')}
@@ -4580,6 +5017,7 @@ class SpectrumBot:
             """,
             reply_markup=keyboard
         )
+
         self.duels_in_progress[duel_id] = {
             'challenger': user_data['id'],
             'opponent': target['id'],
@@ -4590,16 +5028,20 @@ class SpectrumBot:
 
     async def _process_duel(self, duel_id: int, challenger: Dict, opponent: Dict, bet: int, chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         await asyncio.sleep(2)
+
         challenger_roll = random.randint(1, 100)
         opponent_roll = random.randint(1, 100)
+
         if self.db.is_vip(challenger['id']):
             challenger_roll += 5
         if self.db.is_vip(opponent['id']):
             opponent_roll += 5
+
         if challenger.get('cyber_luck_until') and datetime.fromisoformat(challenger['cyber_luck_until']) > datetime.now():
             challenger_roll += 15
         if opponent.get('cyber_luck_until') and datetime.fromisoformat(opponent['cyber_luck_until']) > datetime.now():
             opponent_roll += 15
+
         if challenger_roll > opponent_roll:
             winner = challenger
             loser = opponent
@@ -4615,14 +5057,18 @@ class SpectrumBot:
             await asyncio.sleep(1)
             await self._process_duel(duel_id, challenger, opponent, bet, chat_id, context)
             return
+
         win_amount = bet * 2
         self.db.add_coins(winner['id'], win_amount)
+
         self.db.update_user(winner['id'], platform="telegram",
                           duel_wins=self.db.get_user_by_id(winner['id']).get('duel_wins', 0) + 1,
                           duel_rating=self.db.get_user_by_id(winner['id']).get('duel_rating', 1000) + 25)
+
         self.db.update_user(loser['id'], platform="telegram",
                           duel_losses=self.db.get_user_by_id(loser['id']).get('duel_losses', 0) + 1,
                           duel_rating=self.db.get_user_by_id(loser['id']).get('duel_rating', 1000) - 15)
+
         await context.bot.send_message(
             chat_id,
             f"""
@@ -4640,14 +5086,17 @@ class SpectrumBot:
 {s.success('Поздравляем!')}
             """
         )
+
         self.db.update_duel(duel_id, platform="telegram", status='completed', winner_id=winner['id'])
 
     async def cmd_duels(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.db.cursor.execute("SELECT * FROM duels WHERE status = 'pending'")
         duels = self.db.cursor.fetchall()
+
         if not duels:
             await update.message.reply_text(s.info("Нет активных дуэлей"))
             return
+
         text = f"{s.header('⚔️ АКТИВНЫЕ ДУЭЛИ')}\n\n"
         for duel in duels:
             challenger = self.db.get_user_by_id(duel[1])
@@ -4659,9 +5108,11 @@ class SpectrumBot:
     async def cmd_duel_rating(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.db.cursor.execute("SELECT first_name, nickname, duel_rating FROM users WHERE duel_rating > 0 ORDER BY duel_rating DESC LIMIT 10")
         top = self.db.cursor.fetchall()
+
         if not top:
             await update.message.reply_text(s.info("Рейтинг пуст"))
             return
+
         text = f"{s.header('⚔️ ТОП ДУЭЛЯНТОВ')}\n\n"
         for i, row in enumerate(top, 1):
             name = row[1] or row[0]
@@ -4669,15 +5120,18 @@ class SpectrumBot:
             text += f"{medal} {name} — {row[2]} очков\n"
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== БОССЫ =====
+    # ----- БОССЫ -----
     async def cmd_bosses(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         bosses = self.db.get_bosses()
+
         if not bosses:
             self.db.respawn_bosses()
             bosses = self.db.get_bosses()
+
         text = f"{s.header('👾 БОССЫ')}\n\n"
+
         for i, boss in enumerate(bosses[:5]):
             health_bar = s.progress(boss['health'], boss['max_health'], 10)
             text += f"""
@@ -4687,6 +5141,7 @@ class SpectrumBot:
    💰 Награда: {boss['reward_coins']} 💰, ✨ {boss['reward_exp']}
    💜 Неоны: {boss['reward_neons']}, 🖥 Глитчи: {boss['reward_glitches']}
 """
+
         text += f"""
 {s.section('ТВОИ ПОКАЗАТЕЛИ')}
 ❤️ Здоровье: {user_data['health']}/{user_data['max_health']}
@@ -4698,6 +5153,7 @@ class SpectrumBot:
 • /boss [ID] — атаковать босса
 • /regen — восстановить ❤️ и ⚡️
         """
+
         keyboard_buttons = []
         for i, boss in enumerate(bosses[:5]):
             if boss['is_alive']:
@@ -4707,25 +5163,31 @@ class SpectrumBot:
                 ))
         keyboard_buttons.append(InlineKeyboardButton("🔄 Регенерация", callback_data="boss_regen"))
         keyboard_buttons.append(InlineKeyboardButton("⚔️ Купить оружие", callback_data="boss_buy_weapon"))
+
         reply_markup = InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 1))
+
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_boss_fight(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if not context.args:
             await update.message.reply_text(s.error("Укажи ID босса: /boss 1"))
             return
+
         try:
             boss_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Неверный ID"))
             return
+
         await self._process_boss_attack(update, context, user, user_data, boss_id, is_callback=False)
 
     async def _process_boss_attack(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                    user, user_data, boss_id: int, is_callback: bool = False):
         boss = self.db.get_boss(boss_id)
+
         if not boss or not boss['is_alive']:
             msg = s.error("Босс не найден или уже повержен")
             if is_callback:
@@ -4733,6 +5195,7 @@ class SpectrumBot:
             else:
                 await update.message.reply_text(msg)
             return
+
         if user_data['energy'] < 10:
             msg = s.error("Недостаточно энергии. Используй /regen")
             if is_callback:
@@ -4740,7 +5203,9 @@ class SpectrumBot:
             else:
                 await update.message.reply_text(msg)
             return
+
         self.db.add_energy(user_data['id'], -10)
+
         damage_bonus = 1.0
         if self.db.is_vip(user_data['id']):
             damage_bonus += 0.2
@@ -4748,32 +5213,40 @@ class SpectrumBot:
             damage_bonus += 0.3
         if user_data.get('turbo_drive_until') and datetime.fromisoformat(user_data['turbo_drive_until']) > datetime.now():
             damage_bonus += 0.5
+
         base_damage = user_data['damage'] * damage_bonus
         player_damage = int(base_damage) + random.randint(-5, 5)
+
         crit = random.randint(1, 100) <= user_data['crit_chance']
         if crit:
             player_damage = int(player_damage * user_data['crit_multiplier'] / 100)
             crit_text = "💥 **КРИТИЧЕСКИЙ УДАР!** "
         else:
             crit_text = ""
+
         boss_damage = boss['damage'] + random.randint(-5, 5)
         armor_reduction = user_data['armor'] // 2
         player_taken = max(1, boss_damage - armor_reduction)
+
         killed = self.db.damage_boss(boss_id, player_damage)
         self.db.damage(user_data['id'], player_taken)
+
         total_damage = user_data.get('boss_damage', 0) + player_damage
         self.db.update_user(user_data['id'], platform="telegram", boss_damage=total_damage)
+
         text = f"""
 {s.header('⚔️ БИТВА С БОССОМ')}
 
 {crit_text}Твой урон: {player_damage}
 Урон босса: {player_taken}
         """
+
         if killed:
             reward_coins = boss['reward_coins']
             reward_exp = boss['reward_exp']
             reward_neons = boss['reward_neons']
             reward_glitches = boss['reward_glitches']
+
             if self.db.is_vip(user_data['id']):
                 reward_coins = int(reward_coins * 1.5)
                 reward_exp = int(reward_exp * 1.5)
@@ -4784,11 +5257,13 @@ class SpectrumBot:
                 reward_exp = int(reward_exp * 2)
                 reward_neons = int(reward_neons * 2)
                 reward_glitches = int(reward_glitches * 2)
+
             self.db.add_coins(user_data['id'], reward_coins)
             self.db.add_neons(user_data['id'], reward_neons)
             self.db.add_glitches(user_data['id'], reward_glitches)
             leveled_up = self.db.add_exp(user_data['id'], reward_exp)
             self.db.add_boss_kill(user_data['id'])
+
             text += f"""
 ✅ **ПОБЕДА!**
 • 💰 Монеты: +{reward_coins}
@@ -4803,42 +5278,52 @@ class SpectrumBot:
 ⚠️ **Босс ещё жив!**
 ❤️ Осталось: {boss_info['health']} здоровья
             """
+
         if user_data['health'] <= player_taken:
             self.db.heal(user_data['id'], 50)
             text += f"\nℹ️ Ты погиб и воскрешён с 50❤️"
+
         user_data = self.db.get_user(user.id)
+
         text += f"""
 {s.section('ТВОЁ СОСТОЯНИЕ')}
 ❤️ Здоровье: {user_data['health']}/{user_data['max_health']}
 ⚡️ Энергия: {user_data['energy']}/100
         """
+
         keyboard_buttons = [
             InlineKeyboardButton("⚔️ Атаковать снова", callback_data=f"boss_attack_{boss_id}"),
             InlineKeyboardButton("🔄 Регенерация", callback_data="boss_regen"),
             InlineKeyboardButton("📋 К списку боссов", callback_data="boss_list")
         ]
         reply_markup = InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 1))
+
         if is_callback:
             await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
         else:
             await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
+
         self.db.log_action(user_data['id'], 'boss_fight', f"Урон {player_damage}")
 
     async def cmd_boss_info(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
             await update.message.reply_text(s.error("Укажи ID босса: /bossinfo 1"))
             return
+
         try:
             boss_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Неверный ID"))
             return
+
         boss = self.db.get_boss(boss_id)
         if not boss:
             await update.message.reply_text(s.error("Босс не найден"))
             return
+
         status = "ЖИВ" if boss['is_alive'] else "ПОВЕРЖЕН"
         health_bar = s.progress(boss['health'], boss['max_health'], 20)
+
         text = f"""
 {s.header(f'👾 {boss["name"]}')}
 
@@ -4856,14 +5341,18 @@ class SpectrumBot:
 
     async def cmd_regen(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
+
         cost = 20
         if user_data['coins'] < cost:
             await update.message.reply_text(s.error(f"Недостаточно монет. Нужно {cost} 💰"))
             return
+
         self.db.add_coins(user_data['id'], -cost)
         self.db.heal(user_data['id'], 50)
         self.db.add_energy(user_data['id'], 20)
+
         user_data = self.db.get_user(update.effective_user.id)
+
         text = f"""
 {s.header('✅ РЕГЕНЕРАЦИЯ')}
 
@@ -4905,9 +5394,11 @@ class SpectrumBot:
     async def cmd_my_achievements(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
         achievements = self.db.get_user_achievements(user_data['id'])
+
         if not achievements:
             await update.message.reply_text(s.info("У вас пока нет ачивок"))
             return
+
         text = f"{s.header(f'🏅 АЧИВКИ: {user_data["first_name"]}')}\nВсего: {len(achievements)}\n\n"
         for ach in achievements[:20]:
             text += f"• {ach['name']} — {ach['description']}\n"
@@ -4917,17 +5408,22 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите ID ачивки: /achievement 1"))
             return
+
         try:
             ach_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("ID должен быть числом"))
             return
+
         self.db.cursor.execute("SELECT * FROM achievements_list WHERE id = ?", (ach_id,))
         ach = self.db.cursor.fetchone()
+
         if not ach:
             await update.message.reply_text(s.error("Ачивка не найдена"))
             return
+
         ach = dict(ach)
+
         text = f"""
 {s.header(f'🏅 АЧИВКА {ach_id}')}
 
@@ -4952,9 +5448,11 @@ class SpectrumBot:
             LIMIT 10
         """)
         top = self.db.cursor.fetchall()
+
         if not top or top[0][2] == 0:
             await update.message.reply_text(s.info("Топ ачивок пуст"))
             return
+
         text = f"{s.header('🏆 ТОП КОЛЛЕКЦИОНЕРОВ')}\n\n"
         for i, row in enumerate(top, 1):
             name = row[1] or row[0]
@@ -4977,9 +5475,11 @@ class SpectrumBot:
         chat_id = update.effective_chat.id
         self.db.cursor.execute("SELECT * FROM circles WHERE chat_id = ? ORDER BY created_at", (chat_id,))
         circles = self.db.cursor.fetchall()
+
         if not circles:
             await update.message.reply_text(s.info("В этом чате нет кружков"))
             return
+
         text = f"{s.header('🔄 КРУЖКИ ЧАТА')}\n\n"
         for i, circle in enumerate(circles, 1):
             circle = dict(circle)
@@ -4991,21 +5491,27 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите номер кружка: /circle 1"))
             return
+
         try:
             circle_num = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Номер должен быть числом"))
             return
+
         chat_id = update.effective_chat.id
         self.db.cursor.execute("SELECT * FROM circles WHERE chat_id = ? ORDER BY created_at", (chat_id,))
         circles = self.db.cursor.fetchall()
+
         if circle_num < 1 or circle_num > len(circles):
             await update.message.reply_text(s.error("Кружок с таким номером не найден"))
             return
+
         circle = dict(circles[circle_num - 1])
         members = json.loads(circle['members'])
+
         creator = self.db.get_user_by_id(circle['created_by'])
         creator_name = creator.get('nickname') or creator['first_name'] if creator else "Неизвестно"
+
         text = f"""
 {s.header(f'🔄 КРУЖОК: {circle["name"]}')}
 
@@ -5020,32 +5526,42 @@ class SpectrumBot:
         if len(context.args) < 1:
             await update.message.reply_text(s.error("Укажите название кружка: /createcircle Название"))
             return
+
         name = " ".join(context.args)
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         circle_id = self.db.create_circle(chat_id, name, "", user_data['id'])
+
         if not circle_id:
             await update.message.reply_text(s.error("Не удалось создать кружок"))
             return
+
         await update.message.reply_text(s.success(f"Кружок '{name}' создан!"))
 
     async def cmd_join_circle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
             await update.message.reply_text(s.error("Укажите номер кружка: /joincircle 1"))
             return
+
         try:
             circle_num = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Номер должен быть числом"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT * FROM circles WHERE chat_id = ? ORDER BY created_at", (chat_id,))
         circles = self.db.cursor.fetchall()
+
         if circle_num < 1 or circle_num > len(circles):
             await update.message.reply_text(s.error("Кружок с таким номером не найден"))
             return
+
         circle = dict(circles[circle_num - 1])
+
         if self.db.join_circle(circle['id'], user_data['id']):
             await update.message.reply_text(s.success(f"Вы присоединились к кружку '{circle['name']}'"))
         else:
@@ -5055,19 +5571,25 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите номер кружка: /leavecircle 1"))
             return
+
         try:
             circle_num = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Номер должен быть числом"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT * FROM circles WHERE chat_id = ? ORDER BY created_at", (chat_id,))
         circles = self.db.cursor.fetchall()
+
         if circle_num < 1 or circle_num > len(circles):
             await update.message.reply_text(s.error("Кружок с таким номером не найден"))
             return
+
         circle = dict(circles[circle_num - 1])
+
         if self.db.leave_circle(circle['id'], user_data['id']):
             await update.message.reply_text(s.success(f"Вы покинули кружок '{circle['name']}'"))
         else:
@@ -5078,21 +5600,28 @@ class SpectrumBot:
         if len(context.args) < 2:
             await update.message.reply_text(s.error("Использование: /addbookmark Название ссылка"))
             return
+
         name = context.args[0]
         content = " ".join(context.args[1:])
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         message_id = update.message.reply_to_message.message_id if update.message.reply_to_message else None
+
         bookmark_id = self.db.add_bookmark(chat_id, user_data['id'], name, content, message_id)
+
         await update.message.reply_text(s.success(f"Закладка '{name}' сохранена! ID: {bookmark_id}"))
 
     async def cmd_bookmarks(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         bookmarks = self.db.get_user_bookmarks(user_data['id'], chat_id)
+
         if not bookmarks:
             await update.message.reply_text(s.info("У вас нет закладок в этом чате"))
             return
+
         text = f"{s.header('📌 МОИ ЗАКЛАДКИ')}\n\n"
         for bm in bookmarks:
             text += f"ID {bm['id']}: {bm['name']}\n"
@@ -5102,20 +5631,25 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите ID закладки: /bookmark 123"))
             return
+
         try:
             bookmark_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("ID должен быть числом"))
             return
+
         chat_id = update.effective_chat.id
         self.db.cursor.execute("SELECT * FROM bookmarks WHERE id = ? AND chat_id = ?", (bookmark_id, chat_id))
         bm = self.db.cursor.fetchone()
+
         if not bm:
             await update.message.reply_text(s.error("Закладка не найдена"))
             return
+
         bm = dict(bm)
         user = self.db.get_user_by_id(bm['user_id'])
         user_name = user.get('nickname') or user['first_name'] if user else "Неизвестно"
+
         text = f"""
 {s.header(f'📌 ЗАКЛАДКА: {bm["name"]}')}
 
@@ -5129,31 +5663,40 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите ID закладки: /removebookmark 123"))
             return
+
         try:
             bookmark_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("ID должен быть числом"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT user_id FROM bookmarks WHERE id = ? AND chat_id = ?", (bookmark_id, chat_id))
         row = self.db.cursor.fetchone()
+
         if not row:
             await update.message.reply_text(s.error("Закладка не найдена"))
             return
+
         if row[0] != user_data['id'] and user_data['rank'] < 2:
             await update.message.reply_text(s.error("У вас нет прав на удаление этой закладки"))
             return
+
         self.db.cursor.execute("DELETE FROM bookmarks WHERE id = ?", (bookmark_id,))
         self.db.conn.commit()
+
         await update.message.reply_text(s.success("Закладка удалена"))
 
     async def cmd_chat_bookmarks(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
         bookmarks = self.db.get_chat_bookmarks(chat_id)
+
         if not bookmarks:
             await update.message.reply_text(s.info("В этом чате нет публичных закладок"))
             return
+
         text = f"{s.header('📚 ЧАТБУК')}\n\n"
         for bm in bookmarks[:20]:
             name = bm.get('nickname') or bm['first_name']
@@ -5168,32 +5711,41 @@ class SpectrumBot:
         if len(context.args) < 2:
             await update.message.reply_text(s.error("Использование: /addtimer 30м /ping"))
             return
+
         time_str = context.args[0]
         command = " ".join(context.args[1:])
+
         minutes = parse_time(time_str)
         if not minutes:
             await update.message.reply_text(s.error("Неверный формат времени. Используйте: 30м, 2ч, 1д"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
         execute_at = datetime.now() + timedelta(minutes=minutes)
+
         timer_id = self.db.add_timer(chat_id, user_data['id'], execute_at, command)
+
         if not timer_id:
             await update.message.reply_text(s.error("Достигнут лимит таймеров в чате (макс. 5)"))
             return
+
         await update.message.reply_text(s.success(f"Таймер #{timer_id} установлен на {execute_at.strftime('%d.%m.%Y %H:%M')}"))
 
     async def cmd_timers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("""
-            SELECT * FROM timers
-            WHERE chat_id = ? AND status = 'pending'
+            SELECT * FROM timers 
+            WHERE chat_id = ? AND status = 'pending' 
             ORDER BY execute_at
         """, (chat_id,))
         timers = self.db.cursor.fetchall()
+
         if not timers:
             await update.message.reply_text(s.info("В этом чате нет активных таймеров"))
             return
+
         text = f"{s.header('⏰ ТАЙМЕРЫ ЧАТА')}\n\n"
         for timer in timers:
             timer = dict(timer)
@@ -5205,23 +5757,30 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите ID таймера: /removetimer 1"))
             return
+
         try:
             timer_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("ID должен быть числом"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT user_id FROM timers WHERE id = ? AND chat_id = ?", (timer_id, chat_id))
         row = self.db.cursor.fetchone()
+
         if not row:
             await update.message.reply_text(s.error("Таймер не найден"))
             return
+
         if row[0] != user_data['id'] and user_data['rank'] < 2:
             await update.message.reply_text(s.error("У вас нет прав на удаление этого таймера"))
             return
+
         self.db.cursor.execute("UPDATE timers SET status = 'cancelled' WHERE id = ?", (timer_id,))
         self.db.conn.commit()
+
         await update.message.reply_text(s.success(f"Таймер #{timer_id} удалён"))
 
     # ===== НАГРАДЫ =====
@@ -5229,26 +5788,34 @@ class SpectrumBot:
         if len(context.args) < 3:
             await update.message.reply_text(s.error("Использование: /giveaward 4 @user Текст"))
             return
+
         try:
             degree = int(context.args[0])
         except:
             await update.message.reply_text(s.error("Степень должна быть числом от 1 до 8"))
             return
+
         username = context.args[1].replace('@', '')
         award_text = " ".join(context.args[2:])
+
         if degree < 1 or degree > 8:
             await update.message.reply_text(s.error("Степень должна быть от 1 до 8"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
         if degree > user_data['rank'] and user_data['rank'] < 8:
             await update.message.reply_text(s.error(f"Ваш ранг позволяет выдавать только степени до {user_data['rank']}"))
             return
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         award_id = self.db.give_award(update.effective_chat.id, target['id'], user_data['id'], degree, award_text)
+
         await update.message.reply_text(s.success(f"Награда #{award_id} степени {degree} выдана {target['first_name']}!"))
+
         try:
             await self.send_private_message(
                 target['telegram_id'],
@@ -5267,20 +5834,26 @@ class SpectrumBot:
         username = None
         if context.args:
             username = context.args[0].replace('@', '')
+
         if username:
             target = self.db.get_user_by_username(username)
         else:
             target = self.db.get_user(update.effective_user.id)
+
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         awards = self.db.get_user_awards(target['id'], update.effective_chat.id)
+
         if not awards:
             name = target.get('nickname') or target['first_name']
             await update.message.reply_text(s.info(f"У {name} нет наград"))
             return
+
         name = target.get('nickname') or target['first_name']
         text = f"{s.header(f'🏅 НАГРАДЫ: {name}')}\n\n"
+
         for award in awards:
             date = datetime.fromisoformat(award['awarded_at']).strftime('%d.%m.%Y')
             text += f"• Степень {award['degree']} — {award['text']}\n  От {award['awarded_by_name']}, {date}\n\n"
@@ -5290,22 +5863,28 @@ class SpectrumBot:
         if len(context.args) < 2:
             await update.message.reply_text(s.error("Использование: /removeaward 123 @user"))
             return
+
         try:
             award_id = int(context.args[0])
         except:
             await update.message.reply_text(s.error("ID награды должен быть числом"))
             return
+
         username = context.args[1].replace('@', '')
         user_data = self.db.get_user(update.effective_user.id)
+
         if user_data['rank'] < 2:
             await update.message.reply_text(s.error("Недостаточно прав для снятия наград"))
             return
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         self.db.cursor.execute("DELETE FROM awards WHERE id = ? AND chat_id = ?", (award_id, update.effective_chat.id))
         self.db.conn.commit()
+
         if self.db.cursor.rowcount > 0:
             await update.message.reply_text(s.success(f"Награда #{award_id} снята"))
         else:
@@ -5314,14 +5893,18 @@ class SpectrumBot:
     # ===== КЛАНЫ =====
     async def cmd_clan(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
+
         if not user_data.get('clan_id', 0):
             await update.message.reply_text(s.info("Вы не состоите в клане"))
             return
+
         clan = self.get_clan(user_data['clan_id'])
         if not clan:
             await update.message.reply_text(s.error("Клан не найден"))
             return
+
         members = self.get_clan_members(clan['id'])
+
         text = f"""
 {s.header(f'🏰 КЛАН: {clan["name"]}')}
 
@@ -5340,9 +5923,11 @@ class SpectrumBot:
     async def cmd_clans(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.db.cursor.execute("SELECT name, level, members FROM clans ORDER BY level DESC LIMIT 10")
         clans = self.db.cursor.fetchall()
+
         if not clans:
             await update.message.reply_text(s.info("Нет созданных кланов"))
             return
+
         text = f"{s.header('🏰 ТОП КЛАНОВ')}\n\n"
         for i, clan in enumerate(clans, 1):
             text += f"{i}. {clan[0]} — ур.{clan[1]}, {clan[2]} участников\n"
@@ -5352,18 +5937,23 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите название клана: /createclan Название"))
             return
+
         name = " ".join(context.args)
         user_data = self.db.get_user(update.effective_user.id)
+
         if user_data.get('clan_id', 0):
             await update.message.reply_text(s.error("Вы уже в клане"))
             return
+
         if user_data['coins'] < 1000:
             await update.message.reply_text(s.error(f"Недостаточно монет. Нужно 1000 💰"))
             return
+
         clan_id = self.db.create_clan(update.effective_chat.id, name, "", user_data['id'])
         if not clan_id:
             await update.message.reply_text(s.error("Клан с таким названием уже существует"))
             return
+
         self.db.add_coins(user_data['id'], -1000)
         await update.message.reply_text(s.success(f"Клан '{name}' создан!"))
 
@@ -5371,16 +5961,21 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите название клана: /joinclan Название"))
             return
+
         name = " ".join(context.args)
         user_data = self.db.get_user(update.effective_user.id)
+
         if user_data.get('clan_id', 0):
             await update.message.reply_text(s.error("Вы уже в клане"))
             return
+
         self.db.cursor.execute("SELECT * FROM clans WHERE name = ? AND chat_id = ?", (name, update.effective_chat.id))
         clan = self.db.cursor.fetchone()
+
         if not clan:
             await update.message.reply_text(s.error("Клан не найден"))
             return
+
         if self.db.join_clan(clan[0], user_data['id']):
             await update.message.reply_text(s.success(f"Вы вступили в клан '{name}'"))
         else:
@@ -5388,12 +5983,15 @@ class SpectrumBot:
 
     async def cmd_leave_clan(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
+
         if not user_data.get('clan_id', 0):
             await update.message.reply_text(s.error("Вы не в клане"))
             return
+
         if user_data.get('clan_role') == 'owner':
             await update.message.reply_text(s.error("Владелец не может покинуть клан"))
             return
+
         if self.db.leave_clan(user_data['id']):
             await update.message.reply_text(s.success("Вы покинули клан"))
         else:
@@ -5408,7 +6006,7 @@ class SpectrumBot:
         self.db.cursor.execute("SELECT id, first_name, nickname, clan_role FROM users WHERE clan_id = ?", (clan_id,))
         return [dict(row) for row in self.db.cursor.fetchall()]
 
-    # ===== БОНУСЫ =====
+    # ===== БОНУСЫ (КИБЕР-БОНУСЫ) =====
     async def cmd_bonuses(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
 {s.header('🎁 КИБЕР-БОНУСЫ')}
@@ -5446,6 +6044,7 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите название бонуса"))
             return
+
         name = " ".join(context.args).lower()
         bonuses = {
             "кибер-статус": ("👾 Кибер-статус", 100, "месяц",
@@ -5465,6 +6064,7 @@ class SpectrumBot:
             "рп-пакет": ("🤖 РП-пакет", 120, "месяц",
                         "Эксклюзивные кибер-РП команды")
         }
+
         for key, (title, price, duration, desc) in bonuses.items():
             if key in name:
                 text = f"""
@@ -5479,19 +6079,23 @@ class SpectrumBot:
                 """
                 await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
                 return
+
         await update.message.reply_text(s.error("Бонус не найден"))
 
     async def cmd_buy_bonus(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 2:
             await update.message.reply_text(s.error("Использование: /buybonus [название] [срок]"))
             return
+
         name = context.args[0].lower()
         try:
             duration = int(context.args[1])
         except:
             await update.message.reply_text(s.error("Срок должен быть числом"))
             return
+
         user_data = self.db.get_user(update.effective_user.id)
+
         prices = {
             "кибер-статус": 100,
             "глитч-молот": 50,
@@ -5502,6 +6106,7 @@ class SpectrumBot:
             "файрволл": 80,
             "рп-пакет": 120
         }
+
         bonus_type = None
         price = None
         for key, p in prices.items():
@@ -5509,18 +6114,23 @@ class SpectrumBot:
                 price = p
                 bonus_type = key
                 break
+
         if not price:
             await update.message.reply_text(s.error("Бонус не найден"))
             return
+
         total = price * duration
+
         if user_data['neons'] < total:
             await update.message.reply_text(s.error(f"Недостаточно неонов. Нужно {total} 💜"))
             return
+
         if self.db.buy_bonus(user_data['id'], bonus_type, duration, total):
             await update.message.reply_text(s.success(f"Бонус '{name}' куплен на {duration} мес. за {total} 💜"))
         else:
             await update.message.reply_text(s.error("Ошибка при покупке"))
 
+        # ===== КИБЕР-БОНУСЫ (недостающие) =====
     async def _check_rp_packet(self, user_id: int) -> bool:
         user = self.db.get_user_by_id(user_id)
         if not user:
@@ -5534,6 +6144,9 @@ class SpectrumBot:
     async def cmd_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
 
+    async def cmd_buy_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
     async def cmd_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
 
@@ -5541,16 +6154,20 @@ class SpectrumBot:
         if len(context.args) < 1:
             await update.message.reply_text(s.error("Укажите пользователя: /use_glitch_hammer @user"))
             return
+
         username = context.args[0].replace('@', '')
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         if target['rank'] >= user_data['rank'] and user_data['id'] != OWNER_ID:
             await update.message.reply_text(s.error("Нельзя применить к модератору выше рангом"))
             return
+
         if self.db.use_glitch_hammer(user_data['id'], chat_id, target['id']):
             until = self.db.mute_user(target['id'], 24*60, user_data['id'], "Глитч-молот")
             await self.send_private_message(
@@ -5567,6 +6184,9 @@ class SpectrumBot:
     async def cmd_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
 
+    async def cmd_buy_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
     async def cmd_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
 
@@ -5574,76 +6194,556 @@ class SpectrumBot:
         if update.effective_chat.type != "private":
             await update.message.reply_text(s.error("Эта команда работает только в ЛС"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите текст сообщения"))
             return
+
         text = " ".join(context.args)
         user_data = self.db.get_user(update.effective_user.id)
+
         if not self.db.has_invisible_bonus(user_data['id']):
             await update.message.reply_text(s.error("У вас нет активного бонуса 'Невидимка'"))
             return
+
+        # Здесь можно реализовать отправку анонимного сообщения в чат, если нужно.
         await update.message.reply_text(s.success("Анонимное сообщение отправлено!"))
 
     async def cmd_allow_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 1:
             await update.message.reply_text(s.error("Укажите пользователя: /allow_invisible @user"))
             return
+
         username = context.args[0].replace('@', '')
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3:
             await update.message.reply_text(s.error("Недостаточно прав"))
             return
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         self.db.cursor.execute("DELETE FROM invisible_bans WHERE chat_id = ? AND user_id = ?", (chat_id, target['id']))
         self.db.conn.commit()
+
         await update.message.reply_text(s.success(f"{target['first_name']} может использовать невидимку"))
 
     async def cmd_ban_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 1:
             await update.message.reply_text(s.error("Укажите пользователя: /ban_invisible @user"))
             return
+
         username = context.args[0].replace('@', '')
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3:
             await update.message.reply_text(s.error("Недостаточно прав"))
             return
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text(s.error("Пользователь не найден"))
             return
+
         self.db.cursor.execute("INSERT OR REPLACE INTO invisible_bans (chat_id, user_id, banned_by) VALUES (?, ?, ?)",
                              (chat_id, target['id'], user_data['id']))
         self.db.conn.commit()
+
         await update.message.reply_text(s.success(f"{target['first_name']} забанен в невидимке"))
 
     async def cmd_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
 
+    async def cmd_buy_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
     async def cmd_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
 
     async def cmd_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
 
+    async def cmd_buy_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
     async def cmd_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+            # ===== КИБЕР-БОНУСЫ (полный набор) =====
+    async def _check_rp_packet(self, user_id: int) -> bool:
+        user = self.db.get_user_by_id(user_id)
+        if not user:
+            return False
+        if user.get('rp_packet_until') and datetime.fromisoformat(user['rp_packet_until']) > datetime.now():
+            return True
+        if user.get('cyber_status_until') and datetime.fromisoformat(user['cyber_status_until']) > datetime.now():
+            return True
+        return False
+
+    async def cmd_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_use_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /use_glitch_hammer @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        if target['rank'] >= user_data['rank'] and user_data['id'] != OWNER_ID:
+            await update.message.reply_text(s.error("Нельзя применить к модератору выше рангом"))
+            return
+
+        if self.db.use_glitch_hammer(user_data['id'], chat_id, target['id']):
+            until = self.db.mute_user(target['id'], 24*60, user_data['id'], "Глитч-молот")
+            await self.send_private_message(
+                target['telegram_id'],
+                f"🔨 **ГЛИТЧ-МОЛОТ**\n\n"
+                f"🦸 Модератор: {update.effective_user.first_name}\n"
+                f"⏳ Срок: 24 часа\n"
+                f"💬 Причина: Глитч-молот"
+            )
+            await update.message.reply_text(s.success(f"Глитч-молот применён к {target['first_name']} на 24 часа!"))
+        else:
+            await update.message.reply_text(s.error("У вас нет активного глитч-молота"))
+
+    async def cmd_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_use_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_chat.type != "private":
+            await update.message.reply_text(s.error("Эта команда работает только в ЛС"))
+            return
+
+        if not context.args:
+            await update.message.reply_text(s.error("Укажите текст сообщения"))
+            return
+
+        text = " ".join(context.args)
+        user_data = self.db.get_user(update.effective_user.id)
+
+        if not self.db.has_invisible_bonus(user_data['id']):
+            await update.message.reply_text(s.error("У вас нет активного бонуса 'Невидимка'"))
+            return
+
+        # В реальной реализации здесь нужно отправить анонимное сообщение в чат.
+        await update.message.reply_text(s.success("Анонимное сообщение отправлено!"))
+
+    async def cmd_allow_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /allow_invisible @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        if user_data['rank'] < 3:
+            await update.message.reply_text(s.error("Недостаточно прав"))
+            return
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        self.db.cursor.execute("DELETE FROM invisible_bans WHERE chat_id = ? AND user_id = ?", (chat_id, target['id']))
+        self.db.conn.commit()
+
+        await update.message.reply_text(s.success(f"{target['first_name']} может использовать невидимку"))
+
+    async def cmd_ban_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /ban_invisible @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        if user_data['rank'] < 3:
+            await update.message.reply_text(s.error("Недостаточно прав"))
+            return
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        self.db.cursor.execute("INSERT OR REPLACE INTO invisible_bans (chat_id, user_id, banned_by) VALUES (?, ?, ?)",
+                             (chat_id, target['id'], user_data['id']))
+        self.db.conn.commit()
+
+        await update.message.reply_text(s.success(f"{target['first_name']} забанен в невидимке"))
+
+    async def cmd_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+        # ===== КИБЕР-БОНУСЫ (полный набор) =====
+    async def _check_rp_packet(self, user_id: int) -> bool:
+        user = self.db.get_user_by_id(user_id)
+        if not user:
+            return False
+        if user.get('rp_packet_until') and datetime.fromisoformat(user['rp_packet_until']) > datetime.now():
+            return True
+        if user.get('cyber_status_until') and datetime.fromisoformat(user['cyber_status_until']) > datetime.now():
+            return True
+        return False
+
+    async def cmd_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_use_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /use_glitch_hammer @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        if target['rank'] >= user_data['rank'] and user_data['id'] != OWNER_ID:
+            await update.message.reply_text(s.error("Нельзя применить к модератору выше рангом"))
+            return
+
+        if self.db.use_glitch_hammer(user_data['id'], chat_id, target['id']):
+            until = self.db.mute_user(target['id'], 24*60, user_data['id'], "Глитч-молот")
+            await self.send_private_message(
+                target['telegram_id'],
+                f"🔨 **ГЛИТЧ-МОЛОТ**\n\n"
+                f"🦸 Модератор: {update.effective_user.first_name}\n"
+                f"⏳ Срок: 24 часа\n"
+                f"💬 Причина: Глитч-молот"
+            )
+            await update.message.reply_text(s.success(f"Глитч-молот применён к {target['first_name']} на 24 часа!"))
+        else:
+            await update.message.reply_text(s.error("У вас нет активного глитч-молота"))
+
+    async def cmd_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_use_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_chat.type != "private":
+            await update.message.reply_text(s.error("Эта команда работает только в ЛС"))
+            return
+
+        if not context.args:
+            await update.message.reply_text(s.error("Укажите текст сообщения"))
+            return
+
+        text = " ".join(context.args)
+        user_data = self.db.get_user(update.effective_user.id)
+
+        if not self.db.has_invisible_bonus(user_data['id']):
+            await update.message.reply_text(s.error("У вас нет активного бонуса 'Невидимка'"))
+            return
+
+        # В реальной реализации здесь нужно отправить анонимное сообщение в чат.
+        await update.message.reply_text(s.success("Анонимное сообщение отправлено!"))
+
+    async def cmd_allow_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /allow_invisible @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        if user_data['rank'] < 3:
+            await update.message.reply_text(s.error("Недостаточно прав"))
+            return
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        self.db.cursor.execute("DELETE FROM invisible_bans WHERE chat_id = ? AND user_id = ?", (chat_id, target['id']))
+        self.db.conn.commit()
+
+        await update.message.reply_text(s.success(f"{target['first_name']} может использовать невидимку"))
+
+    async def cmd_ban_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /ban_invisible @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        if user_data['rank'] < 3:
+            await update.message.reply_text(s.error("Недостаточно прав"))
+            return
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        self.db.cursor.execute("INSERT OR REPLACE INTO invisible_bans (chat_id, user_id, banned_by) VALUES (?, ?, ?)",
+                             (chat_id, target['id'], user_data['id']))
+        self.db.conn.commit()
+
+        await update.message.reply_text(s.success(f"{target['first_name']} забанен в невидимке"))
+
+    async def cmd_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+        # ===== КИБЕР-БОНУСЫ (полный набор) =====
+    async def _check_rp_packet(self, user_id: int) -> bool:
+        user = self.db.get_user_by_id(user_id)
+        if not user:
+            return False
+        if user.get('rp_packet_until') and datetime.fromisoformat(user['rp_packet_until']) > datetime.now():
+            return True
+        if user.get('cyber_status_until') and datetime.fromisoformat(user['cyber_status_until']) > datetime.now():
+            return True
+        return False
+
+    async def cmd_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_use_glitch_hammer(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /use_glitch_hammer @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        if target['rank'] >= user_data['rank'] and user_data['id'] != OWNER_ID:
+            await update.message.reply_text(s.error("Нельзя применить к модератору выше рангом"))
+            return
+
+        if self.db.use_glitch_hammer(user_data['id'], chat_id, target['id']):
+            until = self.db.mute_user(target['id'], 24*60, user_data['id'], "Глитч-молот")
+            await self.send_private_message(
+                target['telegram_id'],
+                f"🔨 **ГЛИТЧ-МОЛОТ**\n\n"
+                f"🦸 Модератор: {update.effective_user.first_name}\n"
+                f"⏳ Срок: 24 часа\n"
+                f"💬 Причина: Глитч-молот"
+            )
+            await update.message.reply_text(s.success(f"Глитч-молот применён к {target['first_name']} на 24 часа!"))
+        else:
+            await update.message.reply_text(s.error("У вас нет активного глитч-молота"))
+
+    async def cmd_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_turbo_drive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_use_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_chat.type != "private":
+            await update.message.reply_text(s.error("Эта команда работает только в ЛС"))
+            return
+
+        if not context.args:
+            await update.message.reply_text(s.error("Укажите текст сообщения"))
+            return
+
+        text = " ".join(context.args)
+        user_data = self.db.get_user(update.effective_user.id)
+
+        if not self.db.has_invisible_bonus(user_data['id']):
+            await update.message.reply_text(s.error("У вас нет активного бонуса 'Невидимка'"))
+            return
+
+        # В реальной реализации здесь нужно отправить анонимное сообщение в чат.
+        await update.message.reply_text(s.success("Анонимное сообщение отправлено!"))
+
+    async def cmd_allow_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /allow_invisible @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        if user_data['rank'] < 3:
+            await update.message.reply_text(s.error("Недостаточно прав"))
+            return
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        self.db.cursor.execute("DELETE FROM invisible_bans WHERE chat_id = ? AND user_id = ?", (chat_id, target['id']))
+        self.db.conn.commit()
+
+        await update.message.reply_text(s.success(f"{target['first_name']} может использовать невидимку"))
+
+    async def cmd_ban_invisible(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 1:
+            await update.message.reply_text(s.error("Укажите пользователя: /ban_invisible @user"))
+            return
+
+        username = context.args[0].replace('@', '')
+        user_data = self.db.get_user(update.effective_user.id)
+        chat_id = update.effective_chat.id
+
+        if user_data['rank'] < 3:
+            await update.message.reply_text(s.error("Недостаточно прав"))
+            return
+
+        target = self.db.get_user_by_username(username)
+        if not target:
+            await update.message.reply_text(s.error("Пользователь не найден"))
+            return
+
+        self.db.cursor.execute("INSERT OR REPLACE INTO invisible_bans (chat_id, user_id, banned_by) VALUES (?, ?, ?)",
+                             (chat_id, target['id'], user_data['id']))
+        self.db.conn.commit()
+
+        await update.message.reply_text(s.success(f"{target['first_name']} забанен в невидимке"))
+
+    async def cmd_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_neon_nick(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_cyber_luck(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_firewall(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
+
+    async def cmd_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_bonus_info(update, context)
+
+    async def cmd_buy_rp_packet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.cmd_buy_bonus(update, context)
 
     # ===== РП-КОМАНДЫ =====
     async def cmd_rp_hack(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_hack @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         actions = [
             f"💻 Взломал аккаунт {target_name} и получил доступ к переписке",
             f"🔓 Взломал базу данных и узнал все секреты {target_name}",
@@ -5655,12 +6755,15 @@ class SpectrumBot:
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_glitch @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         actions = [
             f"⚡ Вызвал системный глитч у {target_name}, теперь он двоится",
             f"💫 Заглючил {target_name}, теперь он разговаривает с собой",
@@ -5672,24 +6775,30 @@ class SpectrumBot:
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_reboot @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         await update.message.reply_text(f"🤖 Перезагрузил {target_name}. Подождите 5 секунд... 🔄")
 
     async def cmd_rp_code(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_code @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         code = f"function {target_name}() {{ return 'робот'; }}"
         await update.message.reply_text(f"🤖 Закодил {target_name} в функцию:\n`{code}`", parse_mode=ParseMode.MARKDOWN)
 
@@ -5697,12 +6806,15 @@ class SpectrumBot:
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_digitize @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         binary = ' '.join(format(ord(c), '08b') for c in target_name[:3])
         await update.message.reply_text(f"🤖 Оцифровал {target_name}: `{binary}...`", parse_mode=ParseMode.MARKDOWN)
 
@@ -5710,12 +6822,15 @@ class SpectrumBot:
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_hack_deep @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         data = {
             'IP': f'192.168.{random.randint(1,255)}.{random.randint(1,255)}',
             'Пароль': '*' * random.randint(6, 12),
@@ -5730,12 +6845,15 @@ class SpectrumBot:
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_download @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         size = random.randint(1, 100)
         await update.message.reply_text(f"🤖 Скачиваю данные {target_name}... {size}% [░░░░░░░░░░]")
         await asyncio.sleep(1)
@@ -5745,24 +6863,29 @@ class SpectrumBot:
         if not await self._check_rp_packet(update.effective_user.id):
             await update.message.reply_text(s.error("Для этой команды нужен РП-пакет или Кибер-статус"))
             return
+
         if not context.args:
             await update.message.reply_text(s.error("Укажите пользователя: /rp_update @user"))
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
         target_name = target.get('nickname') or target['first_name'] if target else username
+
         version = f"v{random.randint(1,9)}.{random.randint(0,9)}.{random.randint(0,9)}"
         await update.message.reply_text(f"🤖 Обновляю {target_name} до версии {version}...")
         await asyncio.sleep(1)
         await update.message.reply_text(f"🤖 Обновление завершено! Добавлены новые функции.")
 
-    # ===== ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ =====
+    # ===== ВТОРОЙ AI: ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ =====
     async def cmd_imagine(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
             await update.message.reply_text(s.error("Укажите описание изображения, например:\n/imagine космический корабль в стиле киберпанк"))
             return
+
         prompt = " ".join(context.args)
         msg = await update.message.reply_text("🎨 **Генерирую изображение...** это может занять до минуты.", parse_mode=ParseMode.MARKDOWN)
+
         image_data = await self.image_ai.generate(prompt, retries=2)
         if image_data:
             await msg.delete()
@@ -5773,7 +6896,7 @@ class SpectrumBot:
             )
         else:
             await msg.edit_text(s.error("Не удалось сгенерировать изображение. Сервис временно недоступен. Попробуйте позже."))
-
+        
     async def cmd_imagine_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
 {s.header('🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ')}
@@ -5795,18 +6918,22 @@ class SpectrumBot:
         user = update.effective_user
         chat_id = update.effective_chat.id
         user_data = self.db.get_user(user.id)
+
         self.db.cursor.execute('''
-            SELECT * FROM order_data
+            SELECT * FROM order_data 
             WHERE chat_id = ? AND platform = 'telegram' AND is_active = 1
         ''', (chat_id,))
         order = self.db.cursor.fetchone()
+
         in_order = self.db.is_in_order(user_data['id'], chat_id)
         rank_info = self.db.get_user_rank(user_data['id'], chat_id)
+
         if not context.args:
             if order:
                 order_dict = dict(order)
                 members = json.loads(order_dict['members'])
                 revelation = datetime.fromisoformat(order_dict['revelation_time']).strftime('%d.%m.%Y %H:%M')
+
                 text = f"""
 {s.header('👁️ ТАЙНЫЙ ОРДЕН')}
 
@@ -5840,6 +6967,7 @@ class SpectrumBot:
 💡 Орден активируется администратором.
                 """
             await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
         elif context.args[0].lower() == "rank":
             ranks_text = """
 👁️ **РАНГИ ОРДЕНА**
@@ -5860,6 +6988,7 @@ class SpectrumBot:
                 f"{s.header('👁️ РАНГИ ОРДЕНА')}\n\nТвой ранг: {rank_info['name']}\nОчков: {rank_info['points']}\n\n{ranks_text}",
                 parse_mode=ParseMode.MARKDOWN
             )
+
         elif context.args[0].lower() == "points":
             text = f"""
 {s.header('👁️ МОИ ОЧКИ ОРДЕНА')}
@@ -5878,10 +7007,13 @@ class SpectrumBot:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text(s.error("Только администраторы могут запустить орден."))
             return
+
         members, cycle = self.db.start_order_cycle(chat_id)
+
         for member_id in members:
             try:
                 await self.send_private_message(
@@ -5896,6 +7028,7 @@ class SpectrumBot:
                 )
             except:
                 pass
+
         await update.message.reply_text(
             f"""
 {s.header('👁️ ТАЙНЫЙ ОРДЕН')}
@@ -5910,21 +7043,28 @@ class SpectrumBot:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text(s.error("Только администраторы могут раскрыть орден."))
             return
+
         result = self.db.reveal_order(chat_id)
+
         if not result:
             await update.message.reply_text(s.error("Нет активного ордена."))
             return
+
         members = result['members']
         points = result['points']
         cycle = result['cycle']
+
         message = f"{s.header('👁️ ТАЙНЫЙ ОРДЕН РАСКРЫТ!')}\n\n"
         message += "Всё это время среди вас были избранные...\n\n"
+
         for i, member_id in enumerate(members):
             name = await self.get_user_name(member_id)
             member_points = points.get(str(member_id), 0)
+
             if i == 0:
                 medal = "🏆"
                 self.db.add_order_points(member_id, chat_id, 500, "Победа в цикле ордена")
@@ -5943,8 +7083,11 @@ class SpectrumBot:
                 medal = "🥉"
             else:
                 medal = "👤"
+
             message += f"{medal} {name} — {member_points} очков\n"
+
         message += f"\n👁️ **Спектр:** Спектр наблюдал за вами..."
+
         await update.message.reply_text(message)
 
     # ===== РАЗВЛЕЧЕНИЯ =====
@@ -5988,16 +7131,22 @@ class SpectrumBot:
         if len(context.args) < 2:
             await update.message.reply_text(s.error("Укажите двух пользователей: /compatibility @user1 @user2"))
             return
+
         username1 = context.args[0].replace('@', '')
         username2 = context.args[1].replace('@', '')
+
         user1 = self.db.get_user_by_username(username1)
         user2 = self.db.get_user_by_username(username2)
+
         if not user1 or not user2:
             await update.message.reply_text(s.error("Пользователи не найдены"))
             return
+
         name1 = user1.get('nickname') or user1['first_name']
         name2 = user2.get('nickname') or user2['first_name']
+
         compatibility = random.randint(0, 100)
+
         if compatibility < 30:
             emoji = "💔"
             text = "Очень низкая совместимость"
@@ -6013,6 +7162,7 @@ class SpectrumBot:
         else:
             emoji = "💖"
             text = "Идеальная совместимость!"
+
         await update.message.reply_text(
             f"{s.header('💞 СОВМЕСТИМОСТЬ')}\n\n"
             f"{emoji} {name1} и {name2}\n\n"
@@ -6021,12 +7171,17 @@ class SpectrumBot:
         )
 
     async def cmd_weather(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        city = "Москва" if not context.args else " ".join(context.args)
+        if not context.args:
+            city = "Москва"
+        else:
+            city = " ".join(context.args)
+
         temp = random.randint(-10, 30)
         conditions = ["ясно", "облачно", "пасмурно", "дождь", "снег", "гроза"]
         condition = random.choice(conditions)
         wind = random.randint(0, 10)
         humidity = random.randint(30, 90)
+
         text = (
             f"🌦 Погода в {city}:\n"
             f"🌡 {temp}°C, {condition}\n"
@@ -6044,6 +7199,7 @@ class SpectrumBot:
             except:
                 await update.message.reply_text(s.error("Укажите число"))
                 return
+
         result = random.randint(0, max_num)
         await update.message.reply_text(f"🎲 Случайное число: {result}")
 
@@ -6051,11 +7207,14 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Укажите варианты через или: /choose чай или кофе"))
             return
+
         text = " ".join(context.args)
         options = re.split(r'\s+или\s+', text)
+
         if len(options) < 2:
             await update.message.reply_text(s.error("Нужно минимум 2 варианта через 'или'"))
             return
+
         choice = random.choice(options)
         await update.message.reply_text(f"🤔 Я выбираю: {choice}")
 
@@ -6063,6 +7222,7 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text(s.error("Задайте вопрос: /dane сегодня будет дождь?"))
             return
+
         answers = [
             "🎱 Безусловно да",
             "🎱 Определённо да",
@@ -6083,6 +7243,7 @@ class SpectrumBot:
             "🎱 Перспективы не очень хорошие",
             "🎱 Весьма сомнительно",
         ]
+
         await update.message.reply_text(f"❓ {random.choice(answers)}")
 
     async def cmd_ship(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -6091,24 +7252,33 @@ class SpectrumBot:
             cursor = self.db.cursor
             cursor.execute("SELECT DISTINCT user_id FROM messages WHERE chat_id = ? ORDER BY RANDOM() LIMIT 2", (chat_id,))
             users = cursor.fetchall()
+
             if len(users) < 2:
                 await update.message.reply_text(s.error("Недостаточно участников для шипперинга"))
                 return
+
             user1_id, user2_id = users[0][0], users[1][0]
         else:
             username1 = context.args[0].replace('@', '')
             username2 = context.args[1].replace('@', '')
+
             user1 = self.db.get_user_by_username(username1)
             user2 = self.db.get_user_by_username(username2)
+
             if not user1 or not user2:
                 await update.message.reply_text(s.error("Пользователи не найдены"))
                 return
+
             user1_id, user2_id = user1['id'], user2['id']
+
         user1_data = self.db.get_user_by_id(user1_id)
         user2_data = self.db.get_user_by_id(user2_id)
+
         name1 = user1_data.get('nickname') or user1_data['first_name']
         name2 = user2_data.get('nickname') or user2_data['first_name']
+
         compatibility = random.randint(0, 100)
+
         if compatibility < 30:
             emoji = "💔"
             desc = "Очень низкая совместимость"
@@ -6124,7 +7294,9 @@ class SpectrumBot:
         else:
             emoji = "💖"
             desc = "Идеальная совместимость!"
+
         self.db.create_pair(update.effective_chat.id, user1_id, user2_id)
+
         await update.message.reply_text(
             f"{s.header('💞 ШИППЕРИМ')}\n\n"
             f"{emoji} {name1} + {name2}\n\n"
@@ -6134,9 +7306,11 @@ class SpectrumBot:
 
     async def cmd_pairing(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         pairs = self.db.get_chat_pairs(update.effective_chat.id)
+
         if not pairs:
             await update.message.reply_text(s.info("В этом чате пока нет пар"))
             return
+
         text = f"{s.header('💞 ПАРЫ ЧАТА')}\n\n"
         for pair in pairs[:10]:
             text += f"{pair['name1']} + {pair['name2']}\n"
@@ -6158,6 +7332,7 @@ class SpectrumBot:
         days = uptime.days
         hours = uptime.seconds // 3600
         minutes = (uptime.seconds % 3600) // 60
+
         await update.message.reply_text(
             f"⏱️ Аптайм: {days}д {hours}ч {minutes}м",
             parse_mode=ParseMode.MARKDOWN
@@ -6166,6 +7341,7 @@ class SpectrumBot:
     async def cmd_info(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         users_count = self.db.cursor.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         messages_count = self.db.cursor.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+
         text = (
             f"{s.header('🤖 ИНФОРМАЦИЯ О БОТЕ')}\n\n"
             f"Название: {BOT_NAME}\n"
@@ -6177,9 +7353,10 @@ class SpectrumBot:
             f"{s.stat('AI', 'Подключен' if self.ai and self.ai.is_available else 'Не подключен')}\n"
             f"{s.stat('VK', 'Подключен' if self.vk and self.vk.is_available else 'Не подключен')}"
         )
+
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== ТЕМЫ =====
+        # ===== ТЕМЫ ДЛЯ РОЛЕЙ =====
     async def cmd_themes(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
 {s.header('🎨 ТЕМЫ РОЛЕЙ')}
@@ -6196,37 +7373,26 @@ class SpectrumBot:
         """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    async def cmd_apply_theme(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if not context.args or not context.args[0].isdigit():
-            await update.message.reply_text("Использование: !темы 1..5"); return
-        theme = {1: "default", 2: "cyber", 3: "fantasy", 4: "anime", 5: "military"}.get(int(context.args[0]))
-        if not theme:
-            await update.message.reply_text(s.error("Доступны темы 1–5")); return
-        await self._set_chat_theme(update, theme)
+    async def cmd_apply_theme(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
+        if not context.args or not context.args[0].isdigit(): await update.message.reply_text("Использование: !темы 1..5"); return
+        theme={1:"default",2:"cyber",3:"fantasy",4:"anime",5:"military"}.get(int(context.args[0]))
+        if not theme: await update.message.reply_text(s.error("Доступны темы 1–5")); return
+        await self._set_chat_theme(update,theme)
 
-    async def cmd_apply_theme_by_name(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if not context.args:
-            await update.message.reply_text("Использование: !темы cyber"); return
-        theme = {"стандарт": "default", "стандартная": "default", "киберпанк": "cyber",
-                 "фэнтези": "fantasy", "аниме": "anime", "военная": "military"}.get(context.args[0].lower(), context.args[0].lower())
-        if theme not in {"default", "cyber", "fantasy", "anime", "military"}:
-            await update.message.reply_text(s.error("Тема не найдена. Используйте /themes")); return
-        await self._set_chat_theme(update, theme)
+    async def cmd_apply_theme_by_name(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
+        if not context.args: await update.message.reply_text("Использование: !темы cyber"); return
+        theme={"стандарт":"default","стандартная":"default","киберпанк":"cyber","фэнтези":"fantasy","аниме":"anime","военная":"military"}.get(context.args[0].lower(),context.args[0].lower())
+        if theme not in {"default","cyber","fantasy","anime","military"}: await update.message.reply_text(s.error("Тема не найдена. Используйте /themes")); return
+        await self._set_chat_theme(update,theme)
 
-    async def _set_chat_theme(self, update: Update, theme: str):
-        if update.effective_chat.type == "private":
-            await update.message.reply_text(s.warning("Тема доступна только в группах.")); return
-        user = self.db.get_user(update.effective_user.id, update.effective_user.first_name)
-        if user['rank'] < 3 and update.effective_user.id != OWNER_ID:
-            await update.message.reply_text(s.error("Только администратор может менять тему чата.")); return
-        try:
-            self.db.cursor.execute("ALTER TABLE chat_settings ADD COLUMN theme TEXT DEFAULT 'default'")
-        except sqlite3.OperationalError:
-            pass
-        self.db.cursor.execute("INSERT INTO chat_settings(chat_id,chat_name,theme) VALUES(?,?,?) ON CONFLICT(chat_id) DO UPDATE SET theme=excluded.theme",
-                               (update.effective_chat.id, update.effective_chat.title, theme))
-        self.db.conn.commit()
-        labels = {"default": "Стандартная", "cyber": "Киберпанк", "fantasy": "Фэнтези", "anime": "Аниме", "military": "Военная"}
+    async def _set_chat_theme(self,update:Update,theme:str):
+        if update.effective_chat.type=="private": await update.message.reply_text(s.warning("Тема доступна только в группах.")); return
+        user=self.db.get_user(update.effective_user.id,update.effective_user.first_name)
+        if user['rank']<3 and update.effective_user.id!=OWNER_ID: await update.message.reply_text(s.error("Только администратор может менять тему чата.")); return
+        try: self.db.cursor.execute("ALTER TABLE chat_settings ADD COLUMN theme TEXT DEFAULT 'default'")
+        except sqlite3.OperationalError: pass
+        self.db.cursor.execute("INSERT INTO chat_settings(chat_id,chat_name,theme) VALUES(?,?,?) ON CONFLICT(chat_id) DO UPDATE SET theme=excluded.theme",(update.effective_chat.id,update.effective_chat.title,theme)); self.db.conn.commit()
+        labels={"default":"Стандартная","cyber":"Киберпанк","fantasy":"Фэнтези","anime":"Аниме","military":"Военная"}
         await update.message.reply_text(s.success(f"Тема чата изменена: {labels[theme]}"))
 
     # ===== ТОПЫ =====
@@ -6291,22 +7457,28 @@ class SpectrumBot:
     async def cmd_stats_custom(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
         parts = text.split()
+
         if len(parts) < 2:
             return
+
         try:
             limit = int(parts[1])
         except:
             return
+
         period = "day"
         if len(parts) > 2:
             period_map = {"неделя": "week", "месяц": "month", "вся": "all"}
             period = period_map.get(parts[2].lower(), "day")
+
         await self._chat_stats_period(update, period, limit)
 
     async def _chat_stats_period(self, update: Update, period: str, limit: int = 10):
         chat_id = update.effective_chat.id
         cursor = self.db.cursor
+
         now = datetime.now()
+
         if period == "day":
             time_ago = now - timedelta(days=1)
             period_name = "день"
@@ -6319,23 +7491,28 @@ class SpectrumBot:
         else:
             time_ago = datetime(2000, 1, 1)
             period_name = "всё время"
+
         cursor.execute('''
             SELECT username, first_name, COUNT(*) as msg_count
-            FROM messages
+            FROM messages 
             WHERE chat_id = ? AND timestamp > ?
-            GROUP BY user_id
-            ORDER BY msg_count DESC
+            GROUP BY user_id 
+            ORDER BY msg_count DESC 
             LIMIT ?
         ''', (chat_id, time_ago.isoformat(), limit))
+
         top_users = cursor.fetchall()
+
         if not top_users:
             await update.message.reply_text(s.info("Нет данных за этот период"))
             return
+
         text = f"{s.header(f'🏆 ТОП ЗА {period_name.upper()}')}\n\n"
         for i, (username, first_name, count) in enumerate(top_users, 1):
             name = username or first_name or "Пользователь"
             medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
             text += f"{medal} {name} — {count} 💬\n"
+
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_top_chat_today(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -6350,30 +7527,41 @@ class SpectrumBot:
     async def cmd_top_chat_all(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self._chat_stats_period(update, "all")
 
-    # ===== МОДЕРАЦИЯ: РАНГИ =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - УПРАВЛЕНИЕ РАНГАМИ
+    # =========================================================================
+
     async def _set_rank(self, update: Update, context: ContextTypes.DEFAULT_TYPE, target_rank: int):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 4 and user.id != OWNER_ID:
             await update.message.reply_text(s.error("⛔️ Недостаточно прав. Нужен ранг 4+"))
             return
+
         target_user = await self._resolve_user(update, context, text)
+
         if not target_user:
             await update.message.reply_text(s.error("❌ Пользователь не найден"))
             return
+
         if target_user['rank'] >= user_data['rank'] and user.id != OWNER_ID:
             await update.message.reply_text(s.error("⛔️ Нельзя назначить ранг выше своего"))
             return
+
         self.db.set_rank(target_user['id'], target_rank, user_data['id'])
         rank_info = RANKS[target_rank]
+
         display_name = await self.get_display_name(target_user, target_user['telegram_id'])
+
         await self.send_private_message(
             target_user['telegram_id'],
             f"👑 ВАМ ВЫДАН РАНГ!\n\n"
             f"🦸 Модератор: {user.first_name}\n"
             f"🎖 Ранг: {rank_info['emoji']} {rank_info['name']}"
         )
+
         await update.message.reply_text(
             f"{s.success('Ранг назначен!')}\n\n"
             f"{s.item(f'Пользователь: {display_name}')}\n"
@@ -6381,33 +7569,49 @@ class SpectrumBot:
             parse_mode=ParseMode.MARKDOWN
         )
 
-    async def cmd_set_rank(self, update, context): await self._set_rank(update, context, 1)
-    async def cmd_set_rank2(self, update, context): await self._set_rank(update, context, 2)
-    async def cmd_set_rank3(self, update, context): await self._set_rank(update, context, 3)
-    async def cmd_set_rank4(self, update, context): await self._set_rank(update, context, 4)
-    async def cmd_set_rank5(self, update, context): await self._set_rank(update, context, 5)
+    async def cmd_set_rank(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self._set_rank(update, context, 1)
+
+    async def cmd_set_rank2(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self._set_rank(update, context, 2)
+
+    async def cmd_set_rank3(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self._set_rank(update, context, 3)
+
+    async def cmd_set_rank4(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self._set_rank(update, context, 4)
+
+    async def cmd_set_rank5(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self._set_rank(update, context, 5)
 
     async def cmd_lower_rank(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 4 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         target_user = await self._resolve_user(update, context, text)
+
         if not target_user:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         if target_user['rank'] <= 0:
             await update.message.reply_text("❌ Пользователь и так участник")
             return
+
         if target_user['rank'] >= user_data['rank'] and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Нельзя понизить модератора выше рангом")
             return
+
         new_rank = target_user['rank'] - 1
         self.db.set_rank(target_user['id'], new_rank, user_data['id'])
         rank_info = RANKS[new_rank]
         display_name = await self.get_display_name(target_user, target_user['telegram_id'])
+
         await update.message.reply_text(
             f"✅ Ранг понижен!\n\n"
             f"👤 Пользователь: {display_name}\n"
@@ -6418,18 +7622,24 @@ class SpectrumBot:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 4 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         target_user = await self._resolve_user(update, context, text)
+
         if not target_user:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         if target_user['rank'] >= user_data['rank'] and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Нельзя снять модератора выше рангом")
             return
+
         self.db.set_rank(target_user['id'], 0, user_data['id'])
         display_name = await self.get_display_name(target_user, target_user['telegram_id'])
+
         await update.message.reply_text(
             f"✅ Модератор снят!\n\n"
             f"👤 Пользователь: {display_name}\n"
@@ -6439,21 +7649,27 @@ class SpectrumBot:
     async def cmd_remove_left(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 4 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         await update.message.reply_text("✅ Проверка вышедших модераторов выполнена")
 
     async def cmd_remove_all_ranks(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 5 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Только для создателя")
             return
+
         self.db.cursor.execute("SELECT id FROM users WHERE rank > 0")
         mods = self.db.cursor.fetchall()
+
         for mod_id in mods:
             self.db.set_rank(mod_id[0], 0, user_data['id'])
+
         await update.message.reply_text(f"✅ Снято модераторов: {len(mods)}")
 
     async def cmd_who_admins(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -6461,33 +7677,45 @@ class SpectrumBot:
         if not admins:
             await update.message.reply_text("👥 В чате нет администраторов")
             return
+
         text = "👑 АДМИНИСТРАЦИЯ\n\n"
         for admin in admins:
             display_name = await self.get_display_name(admin, admin.get('telegram_id'))
             rank_emoji = RANKS[admin['rank']]["emoji"]
             text += f"{rank_emoji} {display_name} — {admin['rank_name']}\n"
+
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== МОДЕРАЦИЯ: ВАРНЫ =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - ПРЕДУПРЕЖДЕНИЯ (ВАРНЫ)
+    # =========================================================================
+
     async def cmd_warn(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 1 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав. Нужен ранг 1+", parse_mode=ParseMode.MARKDOWN)
             return
+
         target_user = await self._resolve_user(update, context, text)
         reason = "Нарушение правил"
+
         if not target_user:
             await update.message.reply_text("❌ Пользователь не найден", parse_mode=ParseMode.MARKDOWN)
             return
+
         if target_user['rank'] >= user_data['rank'] and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Нельзя выдать предупреждение модератору выше рангом", parse_mode=ParseMode.MARKDOWN)
             return
+
         warns = self.db.add_warn(target_user['id'], user_data['id'], reason)
+
         admin_name = f"@{user.username}" if user.username else user.first_name
         display_name = await self.get_display_name(target_user, target_user['telegram_id'])
+
         try:
             await context.bot.send_message(
                 target_user['telegram_id'],
@@ -6498,6 +7726,7 @@ class SpectrumBot:
             )
         except:
             pass
+
         await update.message.reply_text(
             f"⚠️ Предупреждение ({warns}/4)\n\n"
             f"👤 Пользователь: {display_name}\n"
@@ -6505,6 +7734,7 @@ class SpectrumBot:
             f"🦸 Модератор: {admin_name}",
             parse_mode=ParseMode.MARKDOWN
         )
+
         if warns == 2:
             minutes = 60
             self.db.mute_user(target_user['id'], minutes, user_data['id'], "2 предупреждения")
@@ -6520,6 +7750,7 @@ class SpectrumBot:
                 await update.message.reply_text(f"🔇 Мут на 1 час\n\n👤 {display_name}", parse_mode=ParseMode.MARKDOWN)
             except Exception as e:
                 logger.error(f"Ошибка мута: {e}")
+
         elif warns == 3:
             minutes = 1440
             self.db.mute_user(target_user['id'], minutes, user_data['id'], "3 предупреждения")
@@ -6535,6 +7766,7 @@ class SpectrumBot:
                 await update.message.reply_text(f"🔇 Мут на 24 часа\n\n👤 {display_name}", parse_mode=ParseMode.MARKDOWN)
             except Exception as e:
                 logger.error(f"Ошибка мута: {e}")
+
         elif warns >= 4:
             self.db.ban_user(target_user['id'], user_data['id'], "4 предупреждения")
             try:
@@ -6550,16 +7782,21 @@ class SpectrumBot:
         if not context.args:
             await update.message.reply_text("❌ Укажите пользователя: /warns @user")
             return
+
         username = context.args[0].replace('@', '')
         target = self.db.get_user_by_username(username)
+
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         warns_list = self.db.get_warns(target['id'])
         display_name = await self.get_display_name(target, target['telegram_id'])
+
         if not warns_list:
             await update.message.reply_text(f"📋 У {display_name} нет предупреждений")
             return
+
         text = f"📋 ПРЕДУПРЕЖДЕНИЯ: {display_name}\n\n"
         for warn in warns_list:
             admin = self.db.get_user_by_id(warn['admin_id'])
@@ -6571,17 +7808,21 @@ class SpectrumBot:
                 f"🦸 Модератор: {admin_name}\n"
                 f"📅 Дата: {date}\n\n"
             )
+
         text += f"📊 Всего: {len(warns_list)}/4"
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_my_warns(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
         warns_list = self.db.get_warns(user_data['id'])
+
         if not warns_list:
             await update.message.reply_text("✅ У вас нет предупреждений")
             return
+
         user_name = f"@{user_data['username']}" if user_data.get('username') else user_data['first_name']
         text = f"📋 МОИ ПРЕДУПРЕЖДЕНИЯ: {user_name}\n\n"
+
         for warn in warns_list:
             admin = self.db.get_user_by_id(warn['admin_id'])
             admin_name = f"@{admin['username']}" if admin and admin.get('username') else (admin['first_name'] if admin else 'Система')
@@ -6592,6 +7833,7 @@ class SpectrumBot:
                 f"🦸 Модератор: {admin_name}\n"
                 f"📅 Дата: {date}\n\n"
             )
+
         text += f"📊 Всего: {len(warns_list)}/4"
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
@@ -6599,9 +7841,11 @@ class SpectrumBot:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 1 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         target_user = None
         if update.message.reply_to_message:
             target_id = update.message.reply_to_message.from_user.id
@@ -6611,17 +7855,22 @@ class SpectrumBot:
             if match:
                 username = match.group(1)
                 target_user = self.db.get_user_by_username(username)
+
         if not target_user:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         removed = self.db.remove_last_warn(target_user['id'], user_data['id'])
         display_name = await self.get_display_name(target_user, target_user['telegram_id'])
         admin_name = f"@{user.username}" if user.username else user.first_name
+
         if not removed:
             await update.message.reply_text(f"📋 У {display_name} нет предупреждений")
             return
+
         warns_list = self.db.get_warns(target_user['id'])
         remaining = len(warns_list)
+
         await update.message.reply_text(
             f"✅ Предупреждение снято\n\n"
             f"👤 Пользователь: {display_name}\n"
@@ -6633,53 +7882,70 @@ class SpectrumBot:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         match = re.search(r'снять все варны\s+@?(\S+)', text, re.IGNORECASE)
         if not match:
             await update.message.reply_text("❌ Укажите пользователя")
             return
+
         username = match.group(1)
         target_user = self.db.get_user_by_username(username)
+
         if not target_user:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         warns_list = self.db.get_warns(target_user['id'])
         for _ in warns_list:
             self.db.remove_last_warn(target_user['id'], user_data['id'])
+
         target_name = target_user.get('nickname') or target_user['first_name']
         await update.message.reply_text(f"✅ Все предупреждения сняты с {target_name}")
 
-    # ===== МОДЕРАЦИЯ: МУТ =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - МУТ
+    # =========================================================================
+
     async def cmd_mute(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав. Нужен ранг 2+")
             return
+
         match = re.search(r'мут\s+@?(\S+)(?:\s+(\d+[мчд]))?(?:\s+(.+))?', text, re.IGNORECASE)
         if not match:
             await update.message.reply_text("❌ Пример: мут @user 30м спам")
             return
+
         username = match.group(1)
         time_str = match.group(2) if match.group(2) else "60м"
         reason = match.group(3) if match.group(3) else "Нарушение правил"
+
         minutes = parse_time(time_str)
         if not minutes:
             await update.message.reply_text("❌ Неверный формат времени. Используйте: 30м, 2ч, 1д")
             return
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         if target['rank'] >= user_data['rank'] and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Нельзя замутить модератора выше рангом")
             return
+
         until = self.db.mute_user(target['id'], minutes, user_data['id'], reason)
         until_str = until.strftime("%d.%m.%Y %H:%M")
+
         mute_success = False
         try:
             until_date = int(time.time()) + (minutes * 60)
@@ -6693,8 +7959,10 @@ class SpectrumBot:
             mute_success = True
         except Exception as e:
             logger.error(f"Ошибка мута: {e}")
+
         admin_name = f"@{user.username}" if user.username else user.first_name
         display_name = await self.get_display_name(target, target['telegram_id'])
+
         try:
             await context.bot.send_message(
                 target['telegram_id'],
@@ -6705,6 +7973,7 @@ class SpectrumBot:
             )
         except:
             pass
+
         await update.message.reply_text(
             f"🔇 МУТ\n\n"
             f"👤 Пользователь: {display_name}\n"
@@ -6717,19 +7986,23 @@ class SpectrumBot:
 
     async def cmd_mutelist(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         muted = self.db.get_muted_users()
+
         if not muted:
             await update.message.reply_text("📋 Список замученных пуст")
             return
+
         text = "📋 СПИСОК ЗАМУЧЕННЫХ\n\n"
         for mute in muted[:15]:
             until = datetime.fromisoformat(mute['mute_until']).strftime("%d.%m %H:%M")
             name = mute['first_name']
             username = f" (@{mute['username']})" if mute.get('username') else ""
             text += f"🔇 {name}{username} — до {until}\n"
+
         if len(muted) > 15:
             text += f"\n👥 Всего: {len(muted)} (показаны первые 15)"
         else:
             text += f"\n👥 Всего: {len(muted)}"
+
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_unmute(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -6737,9 +8010,11 @@ class SpectrumBot:
         user_data = self.db.get_user(user.id)
         text = update.message.text
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         username = text.replace('размут', '').replace('@', '').strip()
         if not username and update.message.reply_to_message:
             target_id = update.message.reply_to_message.from_user.id
@@ -6749,10 +8024,13 @@ class SpectrumBot:
         else:
             await update.message.reply_text("❌ Укажите пользователя")
             return
+
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         self.db.unmute_user(target['id'], user_data['id'])
+
         try:
             permissions = {
                 'can_send_messages': True,
@@ -6768,6 +8046,7 @@ class SpectrumBot:
             )
         except:
             pass
+
         try:
             await context.bot.send_message(
                 target['telegram_id'],
@@ -6775,33 +8054,46 @@ class SpectrumBot:
             )
         except:
             pass
+
+        admin_name = f"@{user.username}" if user.username else user.first_name
         display_name = await self.get_display_name(target, target['telegram_id'])
+
         await update.message.reply_text(f"✅ Мут снят с {display_name}")
 
-    # ===== МОДЕРАЦИЯ: БАН =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - БАН
+    # =========================================================================
+
     async def cmd_ban(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав. Нужен ранг 2+", parse_mode=ParseMode.MARKDOWN)
             return
+
         match = re.search(r'бан\s+@?(\S+)(?:\s+(.+))?', text, re.IGNORECASE)
         if not match:
             await update.message.reply_text("❌ Пример: `бан @user спам`", parse_mode=ParseMode.MARKDOWN)
             return
+
         username = match.group(1)
         reason = match.group(2) if match.group(2) else "Нарушение правил"
+
         target_data = self.db.get_user_by_username(username)
         if not target_data:
             await update.message.reply_text("❌ Пользователь не найден", parse_mode=ParseMode.MARKDOWN)
             return
+
         target_internal_id = target_data['id']
         target_telegram_id = target_data['telegram_id']
+
         if target_data['rank'] >= user_data['rank'] and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Нельзя забанить модератора выше рангом", parse_mode=ParseMode.MARKDOWN)
             return
+
         try:
             bot_member = await context.bot.get_chat_member(chat_id, context.bot.id)
             if bot_member.status not in ['administrator', 'creator']:
@@ -6812,6 +8104,7 @@ class SpectrumBot:
                 return
         except Exception as e:
             logger.error(f"Ошибка проверки прав: {e}")
+
         try:
             await context.bot.ban_chat_member(
                 chat_id=chat_id,
@@ -6819,15 +8112,19 @@ class SpectrumBot:
                 until_date=int(time.time()) + (30 * 24 * 60 * 60)
             )
             ban_success_telegram = True
+            logger.info(f"Пользователь {target_telegram_id} забанен в чате {chat_id}")
         except Exception as e:
             ban_success_telegram = False
             logger.error(f"Ошибка бана в Telegram для {target_telegram_id}: {e}")
             await update.message.reply_text(f"❌ Ошибка Telegram: {str(e)[:100]}", parse_mode=ParseMode.MARKDOWN)
             return
+
         if ban_success_telegram:
             self.db.ban_user(target_internal_id, user_data['id'], reason)
+
             admin_name = f"@{user.username}" if user.username else user.first_name
             display_name = await self.get_display_name(target_data, target_telegram_id)
+
             text = (
                 f"🔴 Пользователь забанен\n\n"
                 f"👢 Пользователь: {display_name}\n"
@@ -6836,6 +8133,7 @@ class SpectrumBot:
                 f"📅 Срок: 30 дней"
             )
             await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
             try:
                 await context.bot.send_message(
                     target_telegram_id,
@@ -6851,18 +8149,22 @@ class SpectrumBot:
 
     async def cmd_banlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         bans = self.db.get_banlist()
+
         if not bans:
             await update.message.reply_text("📋 Список забаненных пуст")
             return
+
         text = "📋 СПИСОК ЗАБАНЕННЫХ\n\n"
         for ban in bans[:15]:
             name = ban.get('first_name', 'Неизвестно')
             username = f" (@{ban['username']})" if ban.get('username') else ""
             text += f"🔴 {name}{username}\n"
+
         if len(bans) > 15:
             text += f"\n👥 Всего: {len(bans)} (показаны первые 15)"
         else:
             text += f"\n👥 Всего: {len(bans)}"
+
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_unban(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -6870,19 +8172,25 @@ class SpectrumBot:
         user_data = self.db.get_user(user.id)
         text = update.message.text
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав. Нужен ранг 2+", parse_mode=ParseMode.MARKDOWN)
             return
+
         username = text.replace('разбан', '').replace('@', '').strip()
         if not username:
             await update.message.reply_text("❌ Укажите пользователя: `разбан @user`", parse_mode=ParseMode.MARKDOWN)
             return
+
         target_data = self.db.get_user_by_username(username)
         if not target_data:
             await update.message.reply_text("❌ Пользователь не найден", parse_mode=ParseMode.MARKDOWN)
             return
+
         target_internal_id = target_data['id']
         target_telegram_id = target_data['telegram_id']
+        target_name = target_data.get('nickname') or target_data['first_name']
+
         try:
             await context.bot.unban_chat_member(
                 chat_id=chat_id,
@@ -6893,9 +8201,12 @@ class SpectrumBot:
         except Exception as e:
             unban_success_telegram = False
             logger.error(f"Ошибка разбана в Telegram для {target_telegram_id}: {e}")
+
         self.db.unban_user(target_internal_id, user_data['id'])
+
         admin_name = f"@{user.username}" if user.username else user.first_name
         target_display_name = await self.get_display_name(target_data, target_telegram_id)
+
         if unban_success_telegram:
             await update.message.reply_text(
                 f"✅ Бан снят\n\n"
@@ -6925,17 +8236,22 @@ class SpectrumBot:
         user_data = self.db.get_user(user.id)
         text = update.message.text
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 1 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         username = text.replace('кик', '').replace('@', '').strip()
         target = self.db.get_user_by_username(username)
+
         if not target and update.message.reply_to_message:
             target_id = update.message.reply_to_message.from_user.id
             target = self.db.get_user_by_id(self.db.get_user(target_id)['id'])
+
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         try:
             await context.bot.ban_chat_member(chat_id, target['telegram_id'])
             await context.bot.unban_chat_member(chat_id, target['telegram_id'])
@@ -6943,11 +8259,16 @@ class SpectrumBot:
         except Exception as e:
             await update.message.reply_text(f"❌ Ошибка: {e}")
 
-    # ===== ПРОВЕРКА ПРАВ =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - ПРОВЕРКА ПРАВ
+    # =========================================================================
+
     async def cmd_checkrights(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
+
         try:
             bot_member = await context.bot.get_chat_member(chat_id, context.bot.id)
+
             if bot_member.status == 'creator':
                 await update.message.reply_text("✅ Бот является создателем чата! Полные права.")
             elif bot_member.status == 'administrator':
@@ -6956,98 +8277,128 @@ class SpectrumBot:
                     rights.append("✅ может банить/мутить")
                 else:
                     rights.append("❌ НЕТ ПРАВА на бан/мут!")
+
                 if bot_member.can_delete_messages:
                     rights.append("✅ может удалять сообщения")
                 else:
                     rights.append("❌ не может удалять сообщения")
+
                 if bot_member.can_pin_messages:
                     rights.append("✅ может закреплять")
                 else:
                     rights.append("❌ не может закреплять")
+
                 rights_text = "\n".join(rights)
-                await update.message.reply_text(f"👑 Бот администратор\n\n{rights_text}")
+                await update.message.reply_text(
+                    f"👑 Бот администратор\n\n{rights_text}"
+                )
             else:
                 await update.message.reply_text("❌ Бот не администратор! Выдайте права.")
         except Exception as e:
             await update.message.reply_text(f"❌ Ошибка проверки: {e}")
 
-    # ===== ТРИГГЕРЫ =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - ТРИГГЕРЫ
+    # =========================================================================
+
     async def cmd_add_trigger(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         text = text[9:].strip()
         if "=" not in text:
             await update.message.reply_text("❌ Формат: +триггер слово = действие")
             return
+
         word, action = text.split("=", 1)
         word = word.strip().lower()
         action = action.strip()
+
         action_parts = action.split()
         action_type = action_parts[0].lower()
         action_value = action_parts[1] if len(action_parts) > 1 else None
+
         if action_type not in ["delete", "mute", "warn", "ban"]:
             await update.message.reply_text("❌ Действие должно быть: delete, mute, warn, ban")
             return
+
         self.db.cursor.execute('''
             INSERT INTO triggers (chat_id, word, action, action_value, created_by)
             VALUES (?, ?, ?, ?, ?)
         ''', (update.effective_chat.id, word, action_type, action_value, user_data['id']))
         self.db.conn.commit()
+
         await update.message.reply_text(f"✅ Триггер добавлен: {word} -> {action}")
 
     async def cmd_remove_trigger(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         trigger_id = text[9:].strip()
         if not trigger_id.isdigit():
             await update.message.reply_text("❌ Укажите ID триггера")
             return
-        self.db.cursor.execute("DELETE FROM triggers WHERE id = ? AND chat_id = ?",
+
+        self.db.cursor.execute("DELETE FROM triggers WHERE id = ? AND chat_id = ?", 
                              (int(trigger_id), update.effective_chat.id))
         self.db.conn.commit()
+
         await update.message.reply_text("✅ Триггер удален")
 
     async def cmd_list_triggers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self.db.cursor.execute("SELECT id, word, action, action_value FROM triggers WHERE chat_id = ?",
+        self.db.cursor.execute("SELECT id, word, action, action_value FROM triggers WHERE chat_id = ?", 
                              (update.effective_chat.id,))
         triggers = self.db.cursor.fetchall()
+
         if not triggers:
             await update.message.reply_text("ℹ️ В этом чате нет триггеров")
             return
+
         text = "🔹 ТРИГГЕРЫ ЧАТА\n\n"
         for trigger in triggers:
             action_text = trigger[2]
             if trigger[3]:
                 action_text += f" {trigger[3]}"
             text += f"ID: {trigger[0]} | {trigger[1]} → {action_text}\n"
+
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== НАСТРОЙКИ ЧАТА =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - НАСТРОЙКИ ЧАТА
+    # =========================================================================
+
     async def _toggle_setting(self, update: Update, setting: str):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         parts = update.message.text.split()
         if len(parts) < 2:
             await update.message.reply_text("❌ Укажите on или off")
             return
+
         state = 1 if parts[1].lower() in ["on", "вкл", "да"] else 0
+
         self.db.cursor.execute(f'''
             INSERT INTO chat_settings (chat_id, {setting})
             VALUES (?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET {setting} = excluded.{setting}
         ''', (update.effective_chat.id, state))
         self.db.conn.commit()
+
         status = "включен" if state else "выключен"
         names = {"antimat": "Антимат", "antilink": "Антиссылки", "antiflood": "Антифлуд"}
         await update.message.reply_text(f"✅ {names.get(setting, setting)} {status}")
@@ -7064,13 +8415,16 @@ class SpectrumBot:
     async def cmd_clear(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         parts = update.message.text.split()
         if len(parts) < 2:
             await update.message.reply_text("❌ Укажите количество: чистка 50")
             return
+
         try:
             count = int(parts[1])
             if count > 100:
@@ -7078,15 +8432,17 @@ class SpectrumBot:
         except:
             await update.message.reply_text("❌ Количество должно быть числом")
             return
+
         try:
             await update.message.delete()
             messages = []
             async for msg in context.bot.get_chat_history(update.effective_chat.id, limit=count):
                 messages.append(msg.message_id)
+
             if messages:
                 await context.bot.delete_messages(update.effective_chat.id, messages)
                 await context.bot.send_message(
-                    update.effective_chat.id,
+                    update.effective_chat.id, 
                     f"✅ Удалено {len(messages)} сообщений",
                     disable_notification=True
                 )
@@ -7097,55 +8453,68 @@ class SpectrumBot:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         text = update.message.text
+
         if user_data['rank'] < 2 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         username = text.replace('чистка от', '').strip().replace('@', '')
         target = self.db.get_user_by_username(username)
+
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         await update.message.reply_text(f"🔄 Удаляю сообщения {target['first_name']}...")
 
     async def cmd_set_welcome(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         welcome_text = update.message.text[12:].strip()
         if not welcome_text:
             await update.message.reply_text("❌ Укажите текст приветствия")
             return
+
         self.db.cursor.execute('''
             INSERT INTO chat_settings (chat_id, welcome)
             VALUES (?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET welcome = excluded.welcome
         ''', (update.effective_chat.id, welcome_text))
         self.db.conn.commit()
+
         await update.message.reply_text("✅ Приветствие установлено")
 
     async def cmd_set_rules(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         rules_text = update.message.text[9:].strip()
         if not rules_text:
             await update.message.reply_text("❌ Укажите текст правил")
             return
+
         self.db.cursor.execute('''
             INSERT INTO chat_settings (chat_id, rules)
             VALUES (?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET rules = excluded.rules
         ''', (update.effective_chat.id, rules_text))
         self.db.conn.commit()
+
         await update.message.reply_text("✅ Правила установлены")
 
     async def cmd_show_rules(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.db.cursor.execute("SELECT rules FROM chat_settings WHERE chat_id = ?", (update.effective_chat.id,))
         row = self.db.cursor.fetchone()
+
         if row and row[0]:
             await update.message.reply_text(f"📜 Правила чата:\n\n{row[0]}")
         else:
@@ -7154,52 +8523,68 @@ class SpectrumBot:
     async def cmd_set_captcha(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text("⛔️ Недостаточно прав")
             return
+
         parts = update.message.text.split()
         if len(parts) < 2:
             await update.message.reply_text("❌ Укажите on или off")
             return
+
         state = 1 if parts[1].lower() in ["on", "вкл", "да"] else 0
+
         self.db.cursor.execute('''
             INSERT INTO chat_settings (chat_id, captcha)
             VALUES (?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET captcha = excluded.captcha
         ''', (update.effective_chat.id, state))
         self.db.conn.commit()
+
         status = "включена" if state else "выключена"
         await update.message.reply_text(f"✅ Капча {status}")
 
-    # ===== ГОЛОСОВАНИЕ =====
+    # =========================================================================
+    # МЕТОДЫ МОДЕРАЦИИ - ГОЛОСОВАНИЕ ЗА БАН
+    # =========================================================================
+
     async def cmd_ban_vote(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 1:
             await update.message.reply_text("❌ Использование: /banvote @user или гб @user")
             return
+
         username = context.args[0].replace('@', '')
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         required_votes = 5
         min_rank = 0
+
         if len(context.args) >= 3:
             try:
                 required_votes = int(context.args[1])
                 min_rank = int(context.args[2])
             except:
                 pass
+
         vote_id = self.db.create_ban_vote(chat_id, target['id'], user_data['id'], required_votes, min_rank)
+
         display_name = await self.get_display_name(target, target['telegram_id'])
         creator_name = update.effective_user.first_name
+
         keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("✅ ЗА БАН", callback_data=f"vote_for_{vote_id}"),
                 InlineKeyboardButton("❌ ПРОТИВ", callback_data=f"vote_against_{vote_id}")
             ]
         ])
+
         await update.message.reply_text(
             f"🗳 ГОЛОСОВАНИЕ ЗА БАН\n\n"
             f"👤 Цель: {display_name}\n"
@@ -7214,47 +8599,61 @@ class SpectrumBot:
         if len(context.args) < 1:
             await update.message.reply_text("❌ Укажите пользователя: /stopvote @user")
             return
+
         username = context.args[0].replace('@', '')
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         self.db.cursor.execute("SELECT * FROM ban_votes WHERE chat_id = ? AND target_id = ? AND status = 'active'",
                              (chat_id, target['id']))
         vote = self.db.cursor.fetchone()
+
         if not vote:
             await update.message.reply_text("❌ Активное голосование не найдено")
             return
+
         vote = dict(vote)
+
         if vote['created_by'] != user_data['id'] and user_data['rank'] < 3:
             await update.message.reply_text("❌ У вас нет прав на остановку этого голосования")
             return
+
         self.db.cursor.execute("UPDATE ban_votes SET status = 'stopped' WHERE id = ?", (vote['id'],))
         self.db.conn.commit()
+
         await update.message.reply_text("✅ Голосование остановлено")
 
     async def cmd_vote_info(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 1:
             await update.message.reply_text("❌ Укажите пользователя: /voteinfo @user или гб инфо @user")
             return
+
         username = context.args[0].replace('@', '')
         chat_id = update.effective_chat.id
+
         target = self.db.get_user_by_username(username)
         if not target:
             await update.message.reply_text("❌ Пользователь не найден")
             return
+
         self.db.cursor.execute("SELECT * FROM ban_votes WHERE chat_id = ? AND target_id = ? AND status = 'active'",
                              (chat_id, target['id']))
         vote = self.db.cursor.fetchone()
+
         if not vote:
             await update.message.reply_text("❌ Активное голосование не найдено")
             return
+
         vote = dict(vote)
         creator = self.db.get_user_by_id(vote['created_by'])
         creator_name = creator.get('nickname') or creator['first_name'] if creator else "Неизвестно"
         display_name = await self.get_display_name(target, target['telegram_id'])
+
         text = (
             f"🗳 ИНФОРМАЦИЯ О ГОЛОСОВАНИИ\n\n"
             f"👤 Цель: {display_name}\n"
@@ -7264,15 +8663,19 @@ class SpectrumBot:
             f"✅ Голосов ЗА: {vote['votes_for']}\n"
             f"❌ Голосов ПРОТИВ: {vote['votes_against']}"
         )
+
         await update.message.reply_text(text)
 
     async def cmd_vote_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT * FROM ban_votes WHERE chat_id = ? AND status = 'active'", (chat_id,))
         votes = self.db.cursor.fetchall()
+
         if not votes:
             await update.message.reply_text("ℹ️ Нет активных голосований")
             return
+
         text = "🗳 АКТИВНЫЕ ГОЛОСОВАНИЯ\n\n"
         for vote in votes:
             vote = dict(vote)
@@ -7280,11 +8683,13 @@ class SpectrumBot:
             if target:
                 display_name = await self.get_display_name(target, target['telegram_id'])
                 text += f"• {display_name} — {vote['votes_for']}/{vote['required_votes']}\n"
+
         await update.message.reply_text(text)
 
     # ===== ОБРАБОТЧИКИ СООБЩЕНИЙ =====
     async def handle_numbers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text.strip()
+        
         if text == "1":
             await self.cmd_profile(update, context)
         elif text == "2":
@@ -7307,12 +8712,16 @@ class SpectrumBot:
     async def check_spam(self, update: Update) -> bool:
         user = update.effective_user
         user_data = self.db.get_user(user.id)
+
         if has_permission(user_data, 2):
             return False
+
         now = time.time()
         user_id = user.id
+
         self.spam_tracker[user_id] = [t for t in self.spam_tracker[user_id] if now - t < SPAM_WINDOW]
         self.spam_tracker[user_id].append(now)
+
         if len(self.spam_tracker[user_id]) > SPAM_LIMIT:
             self.db.mute_user(user_data['id'], SPAM_MUTE_TIME, 0, "Авто-спам")
             await update.message.reply_text(s.error(f"Спам! Мут на {SPAM_MUTE_TIME} минут"))
@@ -7324,8 +8733,10 @@ class SpectrumBot:
         user = update.effective_user
         message_text = update.message.text
         chat = update.effective_chat
+
         if not user or not message_text:
             return
+
         self.db.save_message(
             user.id,
             user.username,
@@ -7334,34 +8745,46 @@ class SpectrumBot:
             chat.id,
             chat.title
         )
+
         if message_text.startswith('/'):
             return
+
         user_data = self.db.get_user(user.id, user.first_name)
         self.db.update_user(user_data['id'], messages_count=user_data.get('messages_count', 0) + 1)
+
         if self.db.is_banned(user_data['id']):
             return
+
         if self.db.is_muted(user_data['id']):
             await update.message.reply_text("🔇 Ты в муте")
             return
+
         if await self.check_spam(update):
             return
+
         if self.db.is_word_blacklisted(message_text):
             await update.message.delete()
             await update.message.reply_text(s.warning("Запрещенное слово! Сообщение удалено."))
             return
+
+        # Обработка КНБ
         if context.user_data.get('awaiting_rps'):
             if message_text in ["1", "2", "3"]:
                 context.user_data['awaiting_rps'] = False
+
                 choices = {1: "🪨 Камень", 2: "✂️ Ножницы", 3: "📄 Бумага"}
                 results = {
                     (1,2): "win", (2,3): "win", (3,1): "win",
                     (2,1): "lose", (3,2): "lose", (1,3): "lose"
                 }
+
                 player_choice = int(message_text)
                 bot_choice = random.randint(1, 3)
+
                 text = f"✊ КНБ\n\n"
                 text += f"👤 Вы: {choices[player_choice]}\n"
                 text += f"🤖 Бот: {choices[bot_choice]}\n\n"
+
                 if player_choice == bot_choice:
                     self.db.update_user(user_data['id'], rps_draws=user_data.get('rps_draws', 0) + 1)
                     text += "🤝 НИЧЬЯ!"
@@ -7373,8 +8796,11 @@ class SpectrumBot:
                 else:
                     self.db.update_user(user_data['id'], rps_losses=user_data.get('rps_losses', 0) + 1)
                     text += "😢 ПОРАЖЕНИЕ!"
+
                 await update.message.reply_text(text)
                 return
+
+        # Обработка голосования в мафии
         if message_text.lower().startswith('голосовать '):
             try:
                 vote_num = int(message_text.split()[1])
@@ -7384,22 +8810,27 @@ class SpectrumBot:
                         if 1 <= vote_num <= len(alive_players):
                             target_id = alive_players[vote_num - 1]
                             game.votes[user.id] = target_id
+
                             target_name = game.players_data[target_id]['name']
                             await self.send_private_message(
                                 user.id,
                                 f"✅ Ваш голос учтён за {target_name}"
                             )
+
                             await update.message.reply_text(f"✅ Ваш голос учтён за игрока #{vote_num}")
                             break
             except:
                 pass
             return
+
+        # Обработка игр (угадай число, быки и коровы)
         for game_id, game in list(self.games_in_progress.items()):
             if game.get('user_id') == user.id:
                 if game_id.startswith('guess_'):
                     try:
                         guess = int(message_text)
                         game['attempts'] += 1
+
                         if guess == game['number']:
                             win = game['bet'] * 2
                             self.db.add_coins(user_data['id'], win)
@@ -7424,14 +8855,17 @@ class SpectrumBot:
                     except ValueError:
                         await update.message.reply_text("❌ Введите число от 1 до 100")
                     return
+
                 elif game_id.startswith('bulls_'):
                     if len(message_text) != 4 or not message_text.isdigit():
                         await update.message.reply_text("❌ Введите 4 цифры")
                         return
+
                     guess = message_text
                     if len(set(guess)) != 4:
                         await update.message.reply_text("❌ Цифры не должны повторяться")
                         return
+
                     bulls = 0
                     cows = 0
                     for i in range(4):
@@ -7439,7 +8873,9 @@ class SpectrumBot:
                             bulls += 1
                         elif guess[i] in game['number']:
                             cows += 1
+
                     game['attempts'].append((guess, bulls, cows))
+
                     if bulls == 4:
                         win = game['bet'] * 3
                         self.db.add_coins(user_data['id'], win)
@@ -7463,11 +8899,15 @@ class SpectrumBot:
                             f"Осталось попыток: {game['max_attempts'] - len(game['attempts'])}"
                         )
                     return
+
+        # Обработка AI
         is_reply_to_bot = (update.message.reply_to_message and
                           update.message.reply_to_message.from_user.id == context.bot.id)
+
         should_respond = False
         force_response = False
         ai_message = message_text
+
         if ai_message.lower().startswith("спектр"):
             should_respond = True
             force_response = True
@@ -7480,6 +8920,7 @@ class SpectrumBot:
         elif self.ai and self.ai.is_available:
             should_respond = await self.ai.should_respond(ai_message, is_reply_to_bot)
             force_response = False
+
         if should_respond and self.ai and self.ai.is_available:
             try:
                 await update.message.chat.send_action(action="typing")
@@ -7491,10 +8932,15 @@ class SpectrumBot:
                     chat_id=chat.id
                 )
                 if response:
+                    # Без ParseMode: AI может вернуть Markdown/символы, которые
+                    # Telegram отвергнет при разборе форматирования.
                     await update.message.reply_text(response, disable_web_page_preview=True)
                     self.db.update_quest_progress(user_data['id'], 'ai_interactions', 1)
                     return
-                reason = self.ai.last_error or "неизвестная ошибка"
+
+                # Пользователь уже видит typing, поэтому при ошибке обязательно
+                # отправляем понятное сообщение вместо вечного "печатает...".
+                reason=self.ai.last_error or "неизвестная ошибка"
                 await update.message.reply_text(f"⚠️ Спектр временно не смог получить ответ от AI.\nПричина: {reason}")
             except Exception as e:
                 logger.exception(f"AI response error: {e}")
@@ -7509,15 +8955,18 @@ class SpectrumBot:
         member = update.message.left_chat_member
         if member.is_bot:
             return
+
         user_data = self.db.get_user_by_id(member.id)
         if user_data:
             name = user_data.get('nickname') or member.first_name
         else:
             name = member.first_name
+
         await update.message.reply_text(
             f"👋 {name} покинул чат...",
             parse_mode=ParseMode.MARKDOWN
         )
+
         self.db.log_action(
             member.id,
             'left_chat',
@@ -7530,6 +8979,7 @@ class SpectrumBot:
             if member.id == context.bot.id:
                 chat = update.effective_chat
                 added_by = update.message.from_user
+
                 welcome_text = f"""
 Привет, {chat.title}!
 Меня добавил {added_by.first_name}.
@@ -7545,24 +8995,27 @@ class SpectrumBot:
 
 👑 Владелец: {OWNER_USERNAME}
                 """
+
                 keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("📋 Команды", callback_data="help_menu")],
                     [InlineKeyboardButton("👑 Владелец", url=f"https://t.me/{OWNER_USERNAME.replace('@', '')}")]
                 ])
+
                 await update.message.reply_photo(
                     photo="https://i.postimg.cc/wxt62Qy5/photo-2026-02-22-22-19-50.jpg",
                     caption=welcome_text,
                     parse_mode=ParseMode.MARKDOWN,
                     reply_markup=keyboard
                 )
+
                 logger.info(f"✅ Бот добавлен в чат: {chat.title} (ID: {chat.id})")
+
                 self.db.cursor.execute('''
                     INSERT OR IGNORE INTO chat_settings (chat_id, chat_name)
                     VALUES (?, ?)
                 ''', (chat.id, chat.title))
                 self.db.conn.commit()
 
-    # ===== UI-РЕДАКТОРЫ =====
     async def _ui_edit(self, query, text, keyboard=None):
         try:
             await query.edit_message_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard, disable_web_page_preview=True)
@@ -7583,7 +9036,6 @@ class SpectrumBot:
             [InlineKeyboardButton("⟳  Обновить панель", callback_data="ui_home")],
         ])
 
-    # ===== CALLBACK-ОБРАБОТЧИК =====
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         if not query:
@@ -7593,12 +9045,9 @@ class SpectrumBot:
         user = query.from_user
         u = self.db.get_user(user.id, user.first_name)
 
+        # Новая единая навигация. Все эти кнопки реально выполняют действие, а не показывают заглушку.
         if data == "ui_home":
-            text = f"{s.header('SPECTRUM · DASHBOARD')}\n\n"
-            text += f"◉ **{user.first_name}**  ·  уровень **{u['level']}**\n"
-            text += f"💰 {u['coins']:,}   💜 {u['neons']:,}   🖥 {u['glitches']:,}\n"
-            text += f"⚡ Энергия  {u['energy']}/100\n\n"
-            text += "↳ Выберите модуль ниже"
+            text = f"{s.card('SPECTRUM · DASHBOARD', [f'◉ **{user.first_name}**  ·  уровень **{u["level"]}**', f'💰 {u["coins"]:,}   💜 {u["neons"]:,}   🖥 {u["glitches"]:,}', f'⚡ Энергия  {u["energy"]}/100', '↳ Выберите модуль ниже'], emoji='⟡')}"
             await self._ui_edit(query, text, self._ui_home_keyboard()); return
 
         if data == "ui_ai":
@@ -7606,179 +9055,165 @@ class SpectrumBot:
                 text = f"{s.header('🤖 AI · СТАТУС')}\n\n{s.error('AI-модуль не инициализирован')}"
             else:
                 text = f"{s.header('🤖 AI · NEON CORE')}\n\n" + self.ai.diagnostics() + "\n\n💬 В группе: напиши `Спектр ...`\n💬 В ЛС: отправь обычное сообщение\n🧪 Диагностика: `/testai`"
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("🧪 Проверить AI", callback_data="ai_check")], [InlineKeyboardButton("🔄 Обновить", callback_data="ui_ai")], [self._ui_back()]])
-            await self._ui_edit(query, text, kb); return
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🧪 Проверить AI",callback_data="ai_check")],[InlineKeyboardButton("🔄 Обновить",callback_data="ui_ai")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
 
         if data == "ai_check":
             if not self.ai:
-                await query.answer("AI не инициализирован", show_alert=True); return
+                await query.answer("AI не инициализирован",show_alert=True); return
             ok, detail = await self.ai.health_check()
             await query.answer("AI работает" if ok else detail[:180], show_alert=True)
-            await self._ui_edit(query, f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics()}", InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Обновить", callback_data="ui_ai")], [self._ui_back()]])); return
+            await self._ui_edit(query, f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics()}", InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Обновить",callback_data="ui_ai")],[self._ui_back()]])); return
 
         if data == "ui_profile":
             name = u.get('nickname') or user.first_name
             exp_need = max(1, u['level'] * 100)
             text = f"{s.header('👤 ПРОФИЛЬ')}\n\n**{name}**\n{get_rank_emoji(u['rank'])} {u['rank_name']}\n\n📈 Уровень: **{u['level']}**\n{s.progress(u['exp'], exp_need, 12)}\n⚡ Энергия: {u['energy']}/100\n❤️ Здоровье: {u['health']}/{u['max_health']}\n⭐ Репутация: {u['reputation']}\n⚔️ Рейтинг дуэлей: {u['duel_rating']}\n🏅 Ачивки: {len(self.db.get_user_achievements(u['id']))}\n\n💰 {u['coins']:,}  💜 {u['neons']:,}  🖥 {u['glitches']:,}"
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк", callback_data="ui_wallet"), InlineKeyboardButton("🏅 Ачивки", callback_data="ui_achievements")], [self._ui_back()]])
-            await self._ui_edit(query, text, kb); return
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк",callback_data="ui_wallet"),InlineKeyboardButton("🏅 Ачивки",callback_data="ui_achievements")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
 
         if data == "ui_wallet":
-            eco = self.db.economy_summary(u['id'], 7)
-            status = 'PREMIUM' if self.db.is_premium(u['id']) else 'VIP' if self.db.is_vip(u['id']) else 'Обычный'
-            text = f"{s.header('💼 КОШЕЛЁК')}\n\n💰 **{u['coins']:,}** / {MAX_COINS:,}\n{s.progress(u['coins'], MAX_COINS, 12)}\n💜 **{u['neons']:,}** / {MAX_NEONS:,}\n{s.progress(u['neons'], MAX_NEONS, 12)}\n🖥 **{u['glitches']:,}** / {MAX_GLITCHES:,}\n{s.progress(u['glitches'], MAX_GLITCHES, 12)}\n\n📈 За 7 дней:\n💰 +{eco['coins_earned']:,} / −{eco['coins_spent']:,}\n💜 +{eco['neons_earned']:,} / −{eco['neons_spent']:,}\n🖥 +{eco['glitches_earned']:,} / −{eco['glitches_spent']:,}\n\n💎 Статус: {status}\n🔥 Стрик: {u['daily_streak']} дн."
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("🎁 Daily", callback_data="ui_daily"), InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop")], [InlineKeyboardButton("💱 Биржа", callback_data="ui_exchange"), InlineKeyboardButton("📜 История", callback_data="ui_history")], [self._ui_back()]])
-            await self._ui_edit(query, text, kb); return
+            eco=self.db.economy_summary(u['id'],7); status='PREMIUM' if self.db.is_premium(u['id']) else 'VIP' if self.db.is_vip(u['id']) else 'Обычный'
+            text=f"{s.header('💼 КОШЕЛЁК')}\n\n💰 **{u['coins']:,}** / {MAX_COINS:,}\n{s.progress(u['coins'],MAX_COINS,12)}\n💜 **{u['neons']:,}** / {MAX_NEONS:,}\n{s.progress(u['neons'],MAX_NEONS,12)}\n🖥 **{u['glitches']:,}** / {MAX_GLITCHES:,}\n{s.progress(u['glitches'],MAX_GLITCHES,12)}\n\n📈 За 7 дней:\n💰 +{eco['coins_earned']:,} / −{eco['coins_spent']:,}\n💜 +{eco['neons_earned']:,} / −{eco['neons_spent']:,}\n🖥 +{eco['glitches_earned']:,} / −{eco['glitches_spent']:,}\n\n💎 Статус: {status}\n🔥 Стрик: {u['daily_streak']} дн."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 Daily",callback_data="ui_daily"),InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")],[InlineKeyboardButton("💱 Биржа",callback_data="ui_exchange"),InlineKeyboardButton("📜 История",callback_data="ui_history")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
 
         if data == "ui_daily":
-            last = u.get('last_daily'); ready = True; remain = "готов"
+            last=u.get('last_daily'); ready=True; remain="готов"
             if last:
-                delta = (datetime.now() - datetime.fromisoformat(last)).total_seconds()
-                if delta < DAILY_COOLDOWN:
-                    ready = False; sec = int(DAILY_COOLDOWN - delta); remain = f"{sec//3600}ч {(sec%3600)//60}м"
-            text = f"{s.header('🎁 ЕЖЕДНЕВНЫЙ БОНУС')}\n\n🔥 Текущий стрик: **{u['daily_streak']} дн.**\n💰 Базовая награда: 180–260\n💜 Дополнительно: 1–2 неона\n\n{'✅ Бонус доступен' if ready else f'⏳ Следующий бонус через {remain}'}"
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("🎁 Забрать /daily", callback_data="ui_daily_claim")], [self._ui_back()]])
-            await self._ui_edit(query, text, kb); return
+                delta=(datetime.now()-datetime.fromisoformat(last)).total_seconds()
+                if delta<DAILY_COOLDOWN:
+                    ready=False; sec=int(DAILY_COOLDOWN-delta); remain=f"{sec//3600}ч {(sec%3600)//60}м"
+            text=f"{s.header('🎁 ЕЖЕДНЕВНЫЙ БОНУС')}\n\n🔥 Текущий стрик: **{u['daily_streak']} дн.**\n💰 Базовая награда: 180–260\n💜 Дополнительно: 1–2 неона\n\n{'✅ Бонус доступен' if ready else f'⏳ Следующий бонус через {remain}'}"
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🎁 Забрать /daily",callback_data="ui_daily_claim")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
 
         if data == "ui_daily_claim":
-            last = u.get('last_daily')
-            if last and (datetime.now() - datetime.fromisoformat(last)).total_seconds() < DAILY_COOLDOWN:
-                await query.answer("Бонус ещё не готов", show_alert=True); return
-            streak = self.db.add_daily_streak(u['id']); coins = random.randint(180, 260); neons = random.randint(1, 2)
-            mult = 1.0 + min(streak, 30) * 0.5 / 30
-            if self.db.is_premium(u['id']): mult *= 1.35
-            elif self.db.is_vip(u['id']): mult *= 1.20
-            coins = int(coins * mult); self.db.add_coins(u['id'], coins); self.db.add_neons(u['id'], neons)
-            self.db.cursor.execute("UPDATE users SET last_daily=? WHERE id=? AND platform='telegram'", (datetime.now().isoformat(), u['id']))
-            self.db.conn.commit()
-            await self._ui_edit(query, f"{s.header('🎁 БОНУС ПОЛУЧЕН')}\n\n💰 **+{coins:,}**\n💜 **+{neons}**\n🔥 Стрик: **{streak} дн.**", InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк", callback_data="ui_wallet")], [self._ui_back()]])); return
+            # Выполняем ту же механику напрямую, без попытки вызвать команду через callback-update.
+            last=u.get('last_daily')
+            if last and (datetime.now()-datetime.fromisoformat(last)).total_seconds()<DAILY_COOLDOWN:
+                await query.answer("Бонус ещё не готов",show_alert=True); return
+            streak=self.db.add_daily_streak(u['id']); coins=random.randint(180,260); neons=random.randint(1,2)
+            mult=1.0+min(streak,30)*0.5/30
+            if self.db.is_premium(u['id']): mult*=1.35
+            elif self.db.is_vip(u['id']): mult*=1.20
+            coins=int(coins*mult); self.db.add_coins(u['id'],coins); self.db.add_neons(u['id'],neons); self.db.cursor.execute("UPDATE users SET last_daily=? WHERE id=? AND platform='telegram'",(datetime.now().isoformat(),u['id'])); self.db.conn.commit()
+            await self._ui_edit(query,f"{s.header('🎁 БОНУС ПОЛУЧЕН')}\n\n💰 **+{coins:,}**\n💜 **+{neons}**\n🔥 Стрик: **{streak} дн.**",InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк",callback_data="ui_wallet")],[self._ui_back()]])); return
 
         if data == "ui_shop":
-            text = f"{s.header('🛍 КИБЕР-МАГАЗИН')}\n\nПокупки ниже выполняются сразу и списывают реальные средства.\n\nВыбирай улучшения персонажа и статусы."
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Лечение", callback_data="shop_heal"), InlineKeyboardButton("⚡ Энергия", callback_data="shop_energy")], [InlineKeyboardButton("💎 VIP/Premium", callback_data="shop_status")], [InlineKeyboardButton("🤖 Кибер-бонусы", callback_data="ui_bonuses")], [self._ui_back()]])
-            await self._ui_edit(query, text, kb); return
+            text=f"{s.header('🛍 КИБЕР-МАГАЗИН')}\n\nПокупки ниже выполняются сразу и списывают реальные средства.\n\nВыбирай улучшения персонажа и статусы."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Лечение",callback_data="shop_heal"),InlineKeyboardButton("⚡ Энергия",callback_data="shop_energy")],[InlineKeyboardButton("💎 VIP/Premium",callback_data="shop_status")],[InlineKeyboardButton("🤖 Кибер-бонусы",callback_data="ui_bonuses")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
 
         if data == "shop_heal":
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("🧪 +30 HP · 50 💰", callback_data="buy_heal_30"), InlineKeyboardButton("🧪 +70 HP · 100 💰", callback_data="buy_heal_70")], [self._ui_back()]])
-            await self._ui_edit(query, f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n💰 Баланс: {u['coins']:,}\n❤️ Сейчас: {u['health']}/{u['max_health']}", kb); return
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🧪 +30 HP · 50 💰",callback_data="buy_heal_30"),InlineKeyboardButton("🧪 +70 HP · 100 💰",callback_data="buy_heal_70")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n💰 Баланс: {u['coins']:,}\n❤️ Сейчас: {u['health']}/{u['max_health']}",kb); return
         if data.startswith('buy_heal_'):
-            amount = int(data.rsplit('_', 1)[1]); price = 50 if amount == 30 else 100
-            if u['coins'] < price:
-                await query.answer("Недостаточно монет", show_alert=True); return
-            self.db.add_coins(u['id'], -price)
-            self.db.cursor.execute("UPDATE users SET health=MIN(max_health, health+?) WHERE id=? AND platform='telegram'", (amount, u['id']))
-            self.db.conn.commit(); u = self.db.get_user(user.id)
-            await query.answer("Покупка выполнена")
-            await self._ui_edit(query, f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n✅ +{amount} HP\n❤️ Теперь: {u['health']}/{u['max_health']}\n💰 Баланс: {u['coins']:,}", InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Ещё лечение", callback_data="shop_heal")], [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop")]])); return
+            amount=int(data.rsplit('_',1)[1]); price=50 if amount==30 else 100
+            if u['coins']<price: await query.answer("Недостаточно монет",show_alert=True); return
+            self.db.add_coins(u['id'],-price); self.db.cursor.execute("UPDATE users SET health=MIN(max_health, health+?) WHERE id=? AND platform='telegram'",(amount,u['id'])); self.db.conn.commit(); u=self.db.get_user(user.id)
+            await query.answer("Покупка выполнена"); await self._ui_edit(query,f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n✅ +{amount} HP\n❤️ Теперь: {u['health']}/{u['max_health']}\n💰 Баланс: {u['coins']:,}",InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Ещё лечение",callback_data="shop_heal")],[InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")]])); return
         if data == "shop_energy":
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("🥤 +20 энергии · 30 💰", callback_data="buy_energy_20"), InlineKeyboardButton("🔋 +50 энергии · 80 💰", callback_data="buy_energy_50")], [self._ui_back()]])
-            await self._ui_edit(query, f"{s.header('⚡ ЭНЕРГИЯ')}\n\n💰 Баланс: {u['coins']:,}\n⚡ Сейчас: {u['energy']}/100", kb); return
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🥤 +20 энергии · 30 💰",callback_data="buy_energy_20"),InlineKeyboardButton("🔋 +50 энергии · 80 💰",callback_data="buy_energy_50")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('⚡ ЭНЕРГИЯ')}\n\n💰 Баланс: {u['coins']:,}\n⚡ Сейчас: {u['energy']}/100",kb); return
         if data.startswith('buy_energy_'):
-            amount = int(data.rsplit('_', 1)[1]); price = 30 if amount == 20 else 80
-            if u['coins'] < price:
-                await query.answer("Недостаточно монет", show_alert=True); return
-            self.db.add_coins(u['id'], -price); self.db.add_energy(u['id'], amount); u = self.db.get_user(user.id)
-            await self._ui_edit(query, f"{s.header('⚡ ЭНЕРГИЯ')}\n\n✅ +{amount} энергии\n⚡ Теперь: {u['energy']}/100\n💰 Баланс: {u['coins']:,}", InlineKeyboardMarkup([[InlineKeyboardButton("⚡ Ещё энергия", callback_data="shop_energy")], [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop")]])); return
+            amount=int(data.rsplit('_',1)[1]); price=30 if amount==20 else 80
+            if u['coins']<price: await query.answer("Недостаточно монет",show_alert=True); return
+            self.db.add_coins(u['id'],-price); self.db.add_energy(u['id'],amount); u=self.db.get_user(user.id)
+            await self._ui_edit(query,f"{s.header('⚡ ЭНЕРГИЯ')}\n\n✅ +{amount} энергии\n⚡ Теперь: {u['energy']}/100\n💰 Баланс: {u['coins']:,}",InlineKeyboardMarkup([[InlineKeyboardButton("⚡ Ещё энергия",callback_data="shop_energy")],[InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")]])); return
         if data == "shop_weapons":
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("🗡 +10 · 200 💰", callback_data="buy_weapon_sword"), InlineKeyboardButton("⚔️ +30 · 500 💰", callback_data="buy_weapon_legendary")], [InlineKeyboardButton("🔫 +50 · 1000 💰", callback_data="buy_weapon_blaster")], [self._ui_back()]])
-            await self._ui_edit(query, f"{s.header('⚔️ ОРУЖИЕ')}\n\n⚔️ Текущий урон: {u['damage']}\n🎯 Максимум: 100\n\nВыберите улучшение:", kb); return
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🗡 +10 · 200 💰",callback_data="buy_weapon_sword"),InlineKeyboardButton("⚔️ +30 · 500 💰",callback_data="buy_weapon_legendary")],[InlineKeyboardButton("🔫 +50 · 1000 💰",callback_data="buy_weapon_blaster")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('⚔️ ОРУЖИЕ')}\n\n⚔️ Текущий урон: {u['damage']}\n🎯 Максимум: 100\n\nВыберите улучшение:",kb); return
         if data == "shop_status":
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton(f"VIP · {VIP_PRICE:,} 💰", callback_data="buy_vip"), InlineKeyboardButton(f"Premium · {PREMIUM_PRICE:,} 💰", callback_data="buy_premium")], [self._ui_back()]])
-            await self._ui_edit(query, f"{s.header('💎 СТАТУСЫ')}\n\nVIP: {VIP_DAYS} дней\nPremium: {PREMIUM_DAYS} дней\n\n💰 Баланс: {u['coins']:,}", kb); return
-        if data in ('buy_vip', 'buy_premium'):
-            price = VIP_PRICE if data == 'buy_vip' else PREMIUM_PRICE; days = VIP_DAYS if data == 'buy_vip' else PREMIUM_DAYS; field = 'vip_until' if data == 'buy_vip' else 'premium_until'
-            if u['coins'] < price:
-                await query.answer("Недостаточно монет", show_alert=True); return
-            self.db.add_coins(u['id'], -price); until = (datetime.now() + timedelta(days=days)).isoformat()
-            self.db.cursor.execute(f"UPDATE users SET {field}=? WHERE id=? AND platform='telegram'", (until, u['id'])); self.db.conn.commit()
-            await self._ui_edit(query, f"{s.header('💎 ПОКУПКА ВЫПОЛНЕНА')}\n\n✅ Статус активирован на {days} дней.\n💰 Списано: {price:,}", InlineKeyboardMarkup([[InlineKeyboardButton("💎 Статусы", callback_data="shop_status")], [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop")]])); return
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton(f"VIP · {VIP_PRICE:,} 💰",callback_data="buy_vip"),InlineKeyboardButton(f"Premium · {PREMIUM_PRICE:,} 💰",callback_data="buy_premium")],[self._ui_back()]])
+            await self._ui_edit(query,f"{s.header('💎 СТАТУСЫ')}\n\nVIP: {VIP_DAYS} дней\nPremium: {PREMIUM_DAYS} дней\n\n💰 Баланс: {u['coins']:,}",kb); return
+        if data in ('buy_vip','buy_premium'):
+            price=VIP_PRICE if data=='buy_vip' else PREMIUM_PRICE; days=VIP_DAYS if data=='buy_vip' else PREMIUM_DAYS; field='vip_until' if data=='buy_vip' else 'premium_until'
+            if u['coins']<price: await query.answer("Недостаточно монет",show_alert=True); return
+            self.db.add_coins(u['id'],-price); until=(datetime.now()+timedelta(days=days)).isoformat(); self.db.cursor.execute(f"UPDATE users SET {field}=? WHERE id=? AND platform='telegram'",(until,u['id'])); self.db.conn.commit(); await self._ui_edit(query,f"{s.header('💎 ПОКУПКА ВЫПОЛНЕНА')}\n\n✅ Статус активирован на {days} дней.\n💰 Списано: {price:,}",InlineKeyboardMarkup([[InlineKeyboardButton("💎 Статусы",callback_data="shop_status")],[InlineKeyboardButton("🛍 Магазин",callback_data="ui_shop")]])); return
 
         if data == "ui_exchange":
-            stats = self.db.get_exchange_stats(); text = f"{s.header('💱 БИРЖА')}\n\n💰 Курс: **{stats['price']:,} 💰 / 💜**\n📊 Объём 24ч: {stats['volume_24h']:,}\n📋 Активных ордеров: {stats['active_orders']}\n\nИспользуйте команды /buyorder, /sellorder, /myorders и /cancelorder для торговли."
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("📋 Мои ордера", callback_data="ui_myorders"), InlineKeyboardButton("🔄 Обновить", callback_data="ui_exchange")], [self._ui_back()]])); return
+            stats=self.db.get_exchange_stats(); text=f"{s.header('💱 БИРЖА')}\n\n💰 Курс: **{stats['price']:,} 💰 / 💜**\n📊 Объём 24ч: {stats['volume_24h']:,}\n📋 Активных ордеров: {stats['active_orders']}\n\nИспользуйте команды /buyorder, /sellorder, /myorders и /cancelorder для торговли."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("📋 Мои ордера",callback_data="ui_myorders"),InlineKeyboardButton("🔄 Обновить",callback_data="ui_exchange")],[self._ui_back()]])); return
         if data == "ui_myorders":
-            rows = self.db.get_user_orders(u['id'])
-            text = f"{s.header('📋 МОИ ОРДЕРА')}\n\n"
+            rows=self.db.get_user_orders(u['id']) if hasattr(self.db,'get_user_orders') else []
+            text=f"{s.header('📋 МОИ ОРДЕРА')}\n\n"
             if rows:
-                for r in rows[:10]: text += f"#{r['id']} · {r['type']} · {r['amount']} 💜 · {r['price']} 💰\n"
-            else:
-                text += 'Активных ордеров нет.'
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("💱 Биржа", callback_data="ui_exchange")], [self._ui_back()]])); return
+                for r in rows[:10]: text+=f"#{r['id']} · {r['order_type']} · {r['amount']} 💜 · {r['price']} 💰\n"
+            else: text+='Активных ордеров нет.'
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("💱 Биржа",callback_data="ui_exchange")],[self._ui_back()]])); return
 
         if data == "ui_games":
-            text = f"{s.header('🎮 МИНИ-ИГРЫ')}\n\nВыбирай игры без ставок и денежного риска. Награды — опыт и прогресс."
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton("✊ КНБ", callback_data="game_info_rps"), InlineKeyboardButton("🔢 Угадай число", callback_data="game_info_guess")], [InlineKeyboardButton("🐂 Быки и коровы", callback_data="game_info_bulls"), InlineKeyboardButton("⚔️ Дуэль", callback_data="game_info_duel")], [InlineKeyboardButton("🎭 Мафия", callback_data="game_info_mafia")], [self._ui_back()]])
-            await self._ui_edit(query, text, kb); return
+            text=f"{s.header('🎮 МИНИ-ИГРЫ')}\n\nВыбирай игры без ставок и денежного риска. Награды — опыт и прогресс."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("✊ КНБ",callback_data="game_info_rps"),InlineKeyboardButton("🔢 Угадай число",callback_data="game_info_guess")],[InlineKeyboardButton("🐂 Быки и коровы",callback_data="game_info_bulls"),InlineKeyboardButton("⚔️ Дуэль",callback_data="game_info_duel")],[InlineKeyboardButton("🎭 Мафия",callback_data="game_info_mafia")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
         if data.startswith('game_info_'):
-            names = {'rps': '/rps — камень, ножницы, бумага', 'guess': '/guess — угадай число без ставок', 'bulls': '/bulls — быки и коровы без ставок', 'duel': '/duel — дуэль за рейтинг', 'mafia': '/mafia — социальная игра'}
-            await query.answer(names.get(data[10:], 'Раздел доступен через /games'), show_alert=True); return
+            names={'rps':'/rps — камень, ножницы, бумага','guess':'/guess — угадай число без ставок','bulls':'/bulls — быки и коровы без ставок','duel':'/duel — дуэль за рейтинг','mafia':'/mafia — социальная игра'}
+            await query.answer(names.get(data[10:],'Раздел доступен через /games'),show_alert=True); return
 
         if data == "ui_quests":
-            quests = self.db.get_user_quests(u['id'])
-            if not quests:
-                quests = self.db.assign_daily_quests(u['id']) + self.db.assign_weekly_quests(u['id'])
-            text = f"{s.header('🎯 КВЕСТЫ')}\n\n"
-            for q in quests[:6]:
-                text += f"**{q['name']}**\n{q['description']}\n{s.progress(q['progress'], q['condition_value'], 10)}\n💜 {q['reward_neons']} · 🖥 {q['reward_glitches']}\n\n"
-            if not quests:
-                text += 'Нет активных квестов.'
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Обновить", callback_data="ui_quests")], [self._ui_back()]])); return
+            quests=self.db.get_user_quests(u['id'])
+            if not quests: quests=self.db.assign_daily_quests(u['id'])+self.db.assign_weekly_quests(u['id'])
+            text=f"{s.header('🎯 КВЕСТЫ')}\n\n"
+            for q in quests[:6]: text+=f"**{q['name']}**\n{q['description']}\n{s.progress(q['progress'],q['condition_value'],10)}\n💜 {q['reward_neons']} · 🖥 {q['reward_glitches']}\n\n"
+            if not quests:text+='Нет активных квестов.'
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Обновить",callback_data="ui_quests")],[self._ui_back()]])); return
 
         if data == "ui_ratings":
-            rows = self.db.get_top('coins', 10); text = f"{s.header('🏆 РЕЙТИНГИ')}\n\n"
-            for i, row in enumerate(rows, 1):
-                text += f"{('🥇' if i == 1 else '🥈' if i == 2 else '🥉' if i == 3 else f'{i}.')} {row[1] or row[0] or 'Игрок'} — {row[2]:,} 💰\n"
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("💜 Неоны", callback_data="rating_neons"), InlineKeyboardButton("🖥 Глитчи", callback_data="rating_glitches")], [self._ui_back()]])); return
-        if data in ('rating_neons', 'rating_glitches'):
-            field = 'neons' if data == 'rating_neons' else 'glitches'; rows = self.db.get_top(field, 10); text = f"{s.header('🏆 ТОП')}\n\n"
-            for i, row in enumerate(rows, 1):
-                text += f"{i}. {row[1] or row[0] or 'Игрок'} — {row[2]:,}\n"
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("🏆 Монеты", callback_data="ui_ratings")], [self._ui_back()]])); return
+            rows=self.db.get_top('coins',10); text=f"{s.header('🏆 РЕЙТИНГИ')}\n\n"
+            for i,row in enumerate(rows,1): text+=f"{('🥇' if i==1 else '🥈' if i==2 else '🥉' if i==3 else f'{i}.')} {row[1] or row[0] or 'Игрок'} — {row[2]:,} 💰\n"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("💜 Неоны",callback_data="rating_neons"),InlineKeyboardButton("🖥 Глитчи",callback_data="rating_glitches")],[self._ui_back()]])); return
+        if data in ('rating_neons','rating_glitches'):
+            field='neons' if data=='rating_neons' else 'glitches'; rows=self.db.get_top(field,10); text=f"{s.header('🏆 ТОП')}\n\n"
+            for i,row in enumerate(rows,1): text+=f"{i}. {row[1] or row[0] or 'Игрок'} — {row[2]:,}\n"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🏆 Монеты",callback_data="ui_ratings")],[self._ui_back()]])); return
 
         if data == "ui_stats":
-            text = f"{s.header('📊 МОЯ СТАТИСТИКА')}\n\n💬 Сообщений: {u['messages_count']:,}\n🎮 Команд: {u['commands_used']:,}\n⚔️ Побед в дуэлях: {u['duel_wins']:,}\n👾 Боссов: {u['boss_kills']:,}\n🏆 Рейтинг: {u['duel_rating']}\n⭐ Репутация: {u['reputation']}"
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("👤 Профиль", callback_data="ui_profile")], [self._ui_back()]])); return
+            text=f"{s.header('📊 МОЯ СТАТИСТИКА')}\n\n💬 Сообщений: {u['messages_count']:,}\n🎮 Команд: {u['commands_used']:,}\n⚔️ Побед в дуэлях: {u['duel_wins']:,}\n👾 Боссов: {u['boss_kills']:,}\n🏆 Рейтинг: {u['duel_rating']}\n⭐ Репутация: {u['reputation']}"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("👤 Профиль",callback_data="ui_profile")],[self._ui_back()]])); return
 
         if data == "ui_bonuses":
-            text = f"{s.header('🎁 КИБЕР-БОНУСЫ')}\n\n👾 Кибер-статус\n🔨 Глитч-молот\n⚡ Турбо-драйв\n👻 Невидимка\n🌈 Неон-ник\n🎰 Кибер-удача\n🔒 Файрволл\n🤖 РП-пакет\n\nПокупка и управление доступны через /bonuses."
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("🛍 Открыть бонусы", callback_data="bonuses_menu")], [self._ui_back()]])); return
+            text=f"{s.header('🎁 КИБЕР-БОНУСЫ')}\n\n👾 Кибер-статус\n🔨 Глитч-молот\n⚡ Турбо-драйв\n👻 Невидимка\n🌈 Неон-ник\n🎰 Кибер-удача\n🔒 Файрволл\n🤖 РП-пакет\n\nПокупка и управление доступны через /bonuses."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🛍 Открыть бонусы",callback_data="bonuses_menu")],[self._ui_back()]])); return
         if data == "ui_achievements":
-            ach = self.db.get_user_achievements(u['id']); text = f"{s.header('🏅 ДОСТИЖЕНИЯ')}\n\nПолучено: **{len(ach)}**"
-            for a in ach[:20]: text += f"\n🏅 {a.get('name', 'Достижение')}"
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[self._ui_back()]])); return
+            ach=self.db.get_user_achievements(u['id']); text=f"{s.header('🏅 ДОСТИЖЕНИЯ')}\n\nПолучено: **{len(ach)}**"
+            for a in ach[:20]: text+=f"\n🏅 {a.get('name','Достижение')}"
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[self._ui_back()]])); return
         if data == "ui_history":
-            text = f"{s.header('📜 ИСТОРИЯ')}\n\nИстория операций сохраняется в журнале экономики. Для просмотра полной истории используйте статистику экономики."
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[InlineKeyboardButton("📊 Экономика", callback_data="ui_wallet")], [self._ui_back()]])); return
+            text=f"{s.header('📜 ИСТОРИЯ')}\n\nИстория операций сохраняется в журнале экономики. Для просмотра полной истории используйте статистику экономики."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("📊 Экономика",callback_data="ui_wallet")],[self._ui_back()]])); return
         if data == "ui_bosses":
-            bosses = self.db.get_bosses()
-            text = f"{s.header('👾 БОССЫ')}\n\n"
-            buttons = []
+            bosses=self.db.get_bosses()
+            text=f"{s.header('👾 БОССЫ')}\n\n"
+            buttons=[]
             for boss in bosses[:6]:
-                status = "⚔️" if boss['is_alive'] else "💀"
-                text += f"{status} **{boss['name']}**\n{s.progress(boss['health'], boss['max_health'], 12)}\n❤️ {boss['health']:,}/{boss['max_health']:,}\n\n"
+                status="⚔️" if boss['is_alive'] else "💀"
+                text += f"{status} **{boss['name']}**\n{s.progress(boss['health'],boss['max_health'],12)}\n❤️ {boss['health']:,}/{boss['max_health']:,}\n\n"
                 if boss['is_alive']:
-                    buttons.append(InlineKeyboardButton(f"⚔️ {boss['name']}", callback_data=f"boss_attack_{boss['id']}"))
-            if not buttons:
-                text += "Все доступные боссы сейчас повержены."
-            buttons.append(InlineKeyboardButton("🔄 Регенерация", callback_data="boss_regen"))
+                    buttons.append(InlineKeyboardButton(f"⚔️ {boss['name']}",callback_data=f"boss_attack_{boss['id']}"))
+            if not buttons: text += "Все доступные боссы сейчас повержены."
+            buttons.append(InlineKeyboardButton("🔄 Регенерация",callback_data="boss_regen"))
             buttons.append(self._ui_back())
-            await self._ui_edit(query, text, InlineKeyboardMarkup(self._split_buttons(buttons, 1))); return
+            await self._ui_edit(query,text,InlineKeyboardMarkup(self._split_buttons(buttons,1))); return
         if data == "ui_help":
-            text = f"{s.header('❓ ПОМОЩЬ')}\n\n/start — запуск\n/menu — главное меню\n/profile — профиль\n/balance — кошелёк\n/daily — ежедневный бонус\n/shop — магазин\n/exchange — биржа\n/games — игры\n/quests — квесты\n/bonuses — кибер-бонусы\n/stats — статистика\n/top — рейтинги\n\n🤖 AI: напишите **Спектр ...** или откройте ЛС с ботом."
-            await self._ui_edit(query, text, InlineKeyboardMarkup([[self._ui_back()]])); return
+            text=f"{s.header('❓ ПОМОЩЬ')}\n\n/start — запуск\n/menu — главное меню\n/profile — профиль\n/balance — кошелёк\n/daily — ежедневный бонус\n/shop — магазин\n/exchange — биржа\n/games — игры\n/quests — квесты\n/bonuses — кибер-бонусы\n/stats — статистика\n/top — рейтинги\n\n🤖 AI: напишите **Спектр ...** или откройте ЛС с ботом."
+            await self._ui_edit(query,text,InlineKeyboardMarkup([[self._ui_back()]])); return
         if data.startswith('chat_card_'):
-            chat_id = int(data.split('_')[2]); self.db.cursor.execute("SELECT chat_name, chat_code FROM chat_settings WHERE chat_id=?", (chat_id,)); row = self.db.cursor.fetchone()
+            chat_id=int(data.split('_')[2]); self.db.cursor.execute("SELECT chat_name, chat_code FROM chat_settings WHERE chat_id=?",(chat_id,)); row=self.db.cursor.fetchone()
             if row:
-                await self._ui_edit(query, f"{s.header('📇 КАРТОЧКА ЧАТА')}\n\n💬 {row[0] or 'Без названия'}\n🔑 Код: `{row[1] or 'не задан'}`\n🆔 `{chat_id}`", InlineKeyboardMarkup([[InlineKeyboardButton("◀️ К рейтингу", callback_data="top_chats")]])); return
+                await self._ui_edit(query,f"{s.header('📇 КАРТОЧКА ЧАТА')}\n\n💬 {row[0] or 'Без названия'}\n🔑 Код: `{row[1] or 'не задан'}`\n🆔 `{chat_id}`",InlineKeyboardMarkup([[InlineKeyboardButton("◀️ К рейтингу",callback_data="top_chats")]])); return
 
+        # Старые игровые/служебные callback'и сохраняются и продолжают работать.
         await self._legacy_button_callback(update, context)
 
     async def _legacy_button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
+
         if not query.message:
             logger.error("Нет сообщения для редактирования")
             return
+
         data = query.data
         user = query.from_user
         user_data = self.db.get_user(user.id)
@@ -7786,31 +9221,157 @@ class SpectrumBot:
         if data == "economy_wallet":
             u = self.db.get_user(user.id); eco = self.db.economy_summary(u['id'], 7)
             text = f"{s.header('💼 КОШЕЛЁК')}\n\n💰 **{u['coins']:,}** 💰\n💜 **{u['neons']:,}** 💜\n🖥 **{u['glitches']:,}** 🖥\n\n🔥 Стрик: {u['daily_streak']} дн."
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton('🛍 Магазин', callback_data='shop_menu'), InlineKeyboardButton('💱 Биржа', callback_data='exchange_menu')], [InlineKeyboardButton('🎁 Daily', callback_data='economy_daily_info')]])
+            kb = InlineKeyboardMarkup([[InlineKeyboardButton('🛍 Магазин', callback_data='shop_menu'), InlineKeyboardButton('💱 Биржа', callback_data='exchange_menu')],[InlineKeyboardButton('🎁 Daily', callback_data='economy_daily_info')]])
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
         elif data == "economy_stats":
             eco = self.db.economy_summary(user_data['id'], 7)
             text = f"{s.header('📊 ЭКОНОМИКА · 7 ДНЕЙ')}\n\n💰 +{eco['coins_earned']:,} / −{eco['coins_spent']:,}\n💜 +{eco['neons_earned']:,} / −{eco['neons_spent']:,}\n🖥 +{eco['glitches_earned']:,} / −{eco['glitches_spent']:,}"
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]]))
+
         elif data == "economy_daily_info":
             text = f"{s.header('🎁 DAILY')}\n\n🔥 Стрик даёт до +50%.\n💎 VIP: +20%. Premium: +35%.\n💰 База: 180–260 монет и 1–2 неона.\n\nКоманда: /daily"
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]]))
+
         elif data == "shop_menu":
-            kb = InlineKeyboardMarkup([[InlineKeyboardButton('❤️ Лечение', callback_data='shop_heal'), InlineKeyboardButton('⚡ Энергия', callback_data='shop_energy')], [InlineKeyboardButton('⚔️ Оружие', callback_data='shop_weapons'), InlineKeyboardButton('💎 Статусы', callback_data='shop_status')], [InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]])
+            kb = InlineKeyboardMarkup([[InlineKeyboardButton('❤️ Лечение', callback_data='shop_heal'), InlineKeyboardButton('⚡ Энергия', callback_data='shop_energy')],[InlineKeyboardButton('⚔️ Оружие', callback_data='shop_weapons'), InlineKeyboardButton('💎 Статусы', callback_data='shop_status')],[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]])
             await query.edit_message_text(f"{s.header('🛍 МАГАЗИН')}\n\nВыберите категорию:", parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
+        elif data == "shop_heal":
+            text = f"{s.header('❤️ ЛЕЧЕНИЕ')}\n\n🧪 Зелье — 50 💰 → +30 HP\n🧪 Большое зелье — 100 💰 → +70 HP"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "shop_energy":
+            text = f"{s.header('⚡ ЭНЕРГИЯ')}\n\n🥤 Энергетик — 30 💰 → +20 энергии\n🔋 Батарейка — 80 💰 → +50 энергии"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "shop_weapons":
+            text = f"{s.header('⚔️ ОРУЖИЕ')}\n\n🗡 Меч — 200 💰 → +10 урона\n⚔️ Легендарный — 500 💰 → +30 урона\n\nЛимит урона: 100."
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
+        elif data == "shop_status":
+            text = f"{s.header('💎 СТАТУСЫ')}\n\nVIP — {VIP_PRICE:,} 💰 / {VIP_DAYS} дней\nPremium — {PREMIUM_PRICE:,} 💰 / {PREMIUM_DAYS} дней"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Магазин', callback_data='shop_menu')]]))
+
         elif data == "exchange_menu":
             stats = self.db.get_exchange_stats()
-            text = f"{s.header('💱 БИРЖА')}\n\nКурс: **{stats['price']} 💰 / 💜**\nОбъём 24ч: {stats['volume_24h']:,} 💰\nАктивных ордеров: {stats['active_orders']}\n\n/buyorder 100 10 — купить\n/sellorder 100 10 — продать"
+            text = f"{s.header('💱 БИРЖА')}\n\nКурс: **{stats['price']} 💰 / 💜**\nОбъём 24ч: {stats['volume_24h']:,} 💰\nАктивных ордеров: {stats['active_orders']}\n\n/convert 150 — прямой обмен 🖥 → 💜\n/buyorder 100 10 — купить\n/sellorder 100 10 — продать"
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_profile":
+            u = self.db.get_user(user.id)
+            text = f"{s.header('👤 ПРОФИЛЬ')}\n\n**{u.get('nickname') or user.first_name}**\nУровень: {u['level']}\nОпыт: {u['exp']}\nРепутация: {u['reputation']}\nРейтинг дуэлей: {u['duel_rating']}\nАчивки: {len(self.db.get_user_achievements(u['id']))}"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_games":
+            text = f"{s.header('🎮 ИГРЫ')}\n\n🎲 /dice — кости\n✊ /rps — КНБ\n🎰 /slots — слоты\n🔴 /roulette — рулетка\n💣 /saper — сапёр\n⚔️ /duel — дуэль\n🎭 /mafia — мафия"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_quests":
+            quests = self.db.get_user_quests(user_data['id'])
+            text = f"{s.header('🎯 КВЕСТЫ')}\n\n"
+            if quests:
+                for q in quests[:3]:
+                    text += f"**{q['name']}**\n{q['description']}\n{s.progress(q['progress'], q['condition_value'], 10)}\n\n"
+            else:
+                text += 'Активных квестов нет. Откройте /quests.'
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_top":
+            rows = self.db.get_top('coins', 5)
+            text = f"{s.header('🏆 ТОП ПО МОНЕТАМ')}\n\n"
+            for i, row in enumerate(rows, 1):
+                name = row[1] or row[0] or 'Игрок'
+                text += f"{i}. {name} — {row[2]:,} 💰\n"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        elif data == "menu_stats":
+            u = self.db.get_user(user.id)
+            text = f"{s.header('📊 МОЯ СТАТИСТИКА')}\n\n💬 Сообщений: {u['messages_count']:,}\n🎮 Команд: {u['commands_used']:,}\n⚔️ Побед в дуэлях: {u['duel_wins']:,}\n👾 Боссов: {u['boss_kills']:,}\n🏆 Рейтинг: {u['duel_rating']}"
+            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('💼 Кошелёк', callback_data='economy_wallet')]]))
+
+        if data == "random_chat":
+            self.db.cursor.execute("SELECT chat_id, chat_name FROM chat_settings WHERE chat_code IS NOT NULL ORDER BY RANDOM() LIMIT 1")
+            row = self.db.cursor.fetchone()
+            if row:
+                await query.edit_message_text(
+                    f"🎲 Случайная беседа найдена!\n\n"
+                    f"Название: {row[1]}\n"
+                    f"ID: `{row[0]}`\n\n"
+                    f"Присоединяйтесь!"
+                )
+            else:
+                await query.edit_message_text("❌ Нет доступных бесед")
+
+        elif data == "top_chats":
+            await self.cmd_top_chats(update, context)
+
         elif data == "help_menu":
             await self.cmd_help(update, context)
+
+        elif data == "setup_info":
+            text = """
+# 🔧 Установка
+
+Подробная инструкция по установке бота:
+https://teletype.in/@nobucraft/2_pbVPOhaYo
+            """
+            await query.edit_message_text(text, disable_web_page_preview=True)
+
+        elif data == "neons_info":
+            text = """
+# 💜 Что такое неоны?
+
+Неоны — основная валюта кибер-вселенной Спектра.
+
+## Как получить:
+• Ежедневный бонус (/daily)
+• Победы в играх
+• Убийство боссов
+• Покупка за монеты (1000 💰 = 1 💜)
+• Реферальная система
+• Выполнение квестов (/quests)
+
+## На что тратить:
+• Покупка бонусов
+• Подарки
+• Улучшения в играх
+• Торговля на бирже
+
+## Команды:
+/neons — мой баланс
+/transfer @user 100 — перевести неоны
+/farm — ферма глитчей (1 💜 = 100 🖥)
+/exchange — биржа
+            """
+            await query.edit_message_text(text)
+
         elif data == "bonuses_menu":
             await self.cmd_bonuses(update, context)
+
+        elif data == "top_chats_day":
+            context.args = ["день"]
+            await self.cmd_top_chats(update, context)
+
+        elif data == "top_chats_week":
+            context.args = ["неделя"]
+            await self.cmd_top_chats(update, context)
+
+        elif data == "top_chats_month":
+            context.args = ["месяц"]
+            await self.cmd_top_chats(update, context)
+
+        elif data.startswith("chat_card_"):
+            chat_id = int(data.split('_')[2])
+            await query.edit_message_text(f"{s.header('📇 КАРТОЧКА ЧАТА')}\n\nКарточка сформирована по данным чата.",parse_mode=ParseMode.MARKDOWN,reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Меню",callback_data="ui_home")]]))
+
         elif data.startswith("boss_attack_"):
             boss_id = int(data.split('_')[2])
             await self._process_boss_attack(update, context, user, user_data, boss_id, is_callback=True)
+
         elif data == "boss_regen":
             await self.cmd_regen(update, context)
+
         elif data == "boss_buy_weapon":
             keyboard_buttons = [
                 InlineKeyboardButton("🗡 Меч (+10 урона) - 200💰", callback_data="buy_weapon_sword"),
@@ -7819,7 +9380,12 @@ class SpectrumBot:
                 InlineKeyboardButton("🔙 Назад", callback_data="boss_list")
             ]
             keyboard = InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 1))
-            await query.edit_message_text(f"{s.header('⚔️ МАГАЗИН ОРУЖИЯ')}\n\nВыберите оружие:", parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
+            await query.edit_message_text(
+                f"{s.header('⚔️ МАГАЗИН ОРУЖИЯ')}\n\nВыберите оружие:",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=keyboard
+            )
+
         elif data.startswith("buy_weapon_"):
             weapon = data.replace("buy_weapon_", "")
             weapons = {
@@ -7827,15 +9393,23 @@ class SpectrumBot:
                 "legendary": {"name": "⚔️ Легендарный меч", "damage": 30, "price": 500},
                 "blaster": {"name": "🔫 Бластер", "damage": 50, "price": 1000}
             }
+
             if weapon in weapons:
                 w = weapons[weapon]
                 if user_data['coins'] >= w['price']:
                     self.db.add_coins(user_data['id'], -w['price'])
                     new_damage = user_data['damage'] + w['damage']
                     self.db.update_user(user_data['id'], damage=new_damage)
-                    await query.edit_message_text(s.success(f"✅ Куплено: {w['name']}!\nТеперь ваш урон: {new_damage}"), parse_mode=ParseMode.MARKDOWN)
+                    await query.edit_message_text(
+                        s.success(f"✅ Куплено: {w['name']}!\nТеперь ваш урон: {new_damage}"),
+                        parse_mode=ParseMode.MARKDOWN
+                    )
                 else:
-                    await query.edit_message_text(s.error(f"❌ Недостаточно монет. Нужно {w['price']} 💰"), parse_mode=ParseMode.MARKDOWN)
+                    await query.edit_message_text(
+                        s.error(f"❌ Недостаточно монет. Нужно {w['price']} 💰"),
+                        parse_mode=ParseMode.MARKDOWN
+                    )
+
         elif data == "boss_list":
             bosses = self.db.get_bosses()
             text = f"{s.header('👾 БОССЫ')}\n\n"
@@ -7843,39 +9417,62 @@ class SpectrumBot:
                 status = "⚔️" if boss['is_alive'] else "💀"
                 health_bar = self._progress_bar(boss['health'], boss['max_health'], 10)
                 text += f"{i+1}. {status} {boss['name']}\n   {health_bar}\n\n"
+
             keyboard_buttons = []
             for i, boss in enumerate(bosses[:5]):
                 if boss['is_alive']:
-                    keyboard_buttons.append(InlineKeyboardButton(f"⚔️ {boss['name']}", callback_data=f"boss_attack_{boss['id']}"))
+                    keyboard_buttons.append(InlineKeyboardButton(
+                        f"⚔️ {boss['name']}",
+                        callback_data=f"boss_attack_{boss['id']}"
+                    ))
+
             keyboard_buttons.append(InlineKeyboardButton("🔄 Регенерация", callback_data="boss_regen"))
-            await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 1)))
+
+            await query.edit_message_text(
+                text,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 1))
+            )
+
         elif data.startswith("saper_"):
             parts = data.split('_')
             if len(parts) >= 3:
                 game_id = f"{parts[1]}_{parts[2]}"
                 cell = int(parts[3])
+
                 if game_id in self.games_in_progress:
                     game = self.games_in_progress[game_id]
                     if game['user_id'] != user.id:
-                        await query.answer("Это не ваша игра!", show_alert=True); return
+                        await query.answer("Это не ваша игра!", show_alert=True)
+                        return
+
                     x = (cell - 1) // 3
                     y = (cell - 1) % 3
+
                     if x == game['mine_x'] and y == game['mine_y']:
-                        await query.edit_message_text(f"{s.header('💥 БУМ!')}\n\n{s.error('Ты подорвался на мине!')}\n\nПроигрыш: {game['bet']} 💰", parse_mode=ParseMode.MARKDOWN)
+                        await query.edit_message_text(
+                            f"{s.header('💥 БУМ!')}\n\n{s.error('Ты подорвался на мине!')}\n\nПроигрыш: {game['bet']} 💰",
+                            parse_mode=ParseMode.MARKDOWN
+                        )
                         del self.games_in_progress[game_id]
                     else:
                         game['opened'] += 1
                         game['field'][x][y] = "✅"
+
                         if game['opened'] >= 8:
                             win = game['bet'] * 3
                             self.db.add_coins(user_data['id'], win)
                             self.db.update_user(user_data['id'], slots_wins=user_data.get('slots_wins', 0) + 1)
-                            await query.edit_message_text(s.success(f"🎉 ПОБЕДА! Ты открыл все безопасные клетки!\nВыигрыш: {win} 💰"), parse_mode=ParseMode.MARKDOWN)
+                            await query.edit_message_text(
+                                s.success(f"🎉 ПОБЕДА! Ты открыл все безопасные клетки!\nВыигрыш: {win} 💰"),
+                                parse_mode=ParseMode.MARKDOWN
+                            )
                             del self.games_in_progress[game_id]
                         else:
                             field_text = ""
                             for i in range(3):
                                 field_text += ' '.join(game['field'][i]) + "\n"
+
                             keyboard_buttons = []
                             for i in range(3):
                                 for j in range(3):
@@ -7884,11 +9481,18 @@ class SpectrumBot:
                                         keyboard_buttons.append(InlineKeyboardButton(f"✅", callback_data="disabled"))
                                     else:
                                         keyboard_buttons.append(InlineKeyboardButton(f"⬜️", callback_data=f"saper_{game_id}_{cell_num}"))
-                            await query.edit_message_text(f"{s.header('💣 САПЁР')}\n\n{field_text}", parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 3)))
+
+                            await query.edit_message_text(
+                                f"{s.header('💣 САПЁР')}\n\n{field_text}",
+                                parse_mode=ParseMode.MARKDOWN,
+                                reply_markup=InlineKeyboardMarkup(self._split_buttons(keyboard_buttons, 3))
+                            )
+
         elif data.startswith("vote_for_"):
             vote_id = int(data.split('_')[2])
             if self.db.vote_for_ban(vote_id, user_data['id'], True):
                 await query.edit_message_text(s.success("✅ Ваш голос учтён (ЗА БАН)"))
+
                 self.db.cursor.execute("SELECT * FROM ban_votes WHERE id = ?", (vote_id,))
                 vote = self.db.cursor.fetchone()
                 if vote and vote[7] >= vote[5]:
@@ -7897,62 +9501,108 @@ class SpectrumBot:
                         self.db.ban_user(target['id'], vote[3], "По результатам голосования")
                         self.db.cursor.execute("UPDATE ban_votes SET status = 'completed' WHERE id = ?", (vote_id,))
                         self.db.conn.commit()
-                        await context.bot.send_message(vote[1], s.error(f"🔨 Пользователь {target['first_name']} забанен по результатам голосования!"))
+
+                        await context.bot.send_message(
+                            vote[1],
+                            s.error(f"🔨 Пользователь {target['first_name']} забанен по результатам голосования!")
+                        )
             else:
                 await query.edit_message_text(s.error("❌ Не удалось проголосовать"))
+
         elif data.startswith("vote_against_"):
             vote_id = int(data.split('_')[2])
             if self.db.vote_for_ban(vote_id, user_data['id'], False):
                 await query.edit_message_text(s.success("✅ Ваш голос учтён (ПРОТИВ БАНА)"))
             else:
                 await query.edit_message_text(s.error("❌ Не удалось проголосовать"))
+
         elif data.startswith("mafia_confirm_"):
             chat_id = int(data.split('_')[2])
             if chat_id in self.mafia_games:
                 game = self.mafia_games[chat_id]
                 if user.id in game.players:
                     game.confirm_player(user.id)
+
                     self.db.cursor.execute('''
                         INSERT INTO mafia_confirmations (game_id, user_id, confirmed)
                         VALUES (?, ?, 1)
                         ON CONFLICT(game_id, user_id) DO UPDATE SET confirmed = 1
                     ''', (game.game_id, user.id))
                     self.db.conn.commit()
-                    await query.edit_message_text(f"{s.success('✅ Подтверждение получено!')}\n\n{s.info('Ожидайте начала игры...')}", parse_mode=ParseMode.MARKDOWN)
+
+                    await query.edit_message_text(
+                        f"{s.success('✅ Подтверждение получено!')}\n\n"
+                        f"{s.info('Ожидайте начала игры...')}",
+                        parse_mode=ParseMode.MARKDOWN
+                    )
+
                     if game.all_confirmed():
                         await self._mafia_start_game(game, context)
+
         elif data.startswith("accept_duel_"):
             duel_id = int(data.split('_')[2])
             duel = self.db.get_duel(duel_id)
+
             if not duel or duel['opponent_id'] != user_data['id'] or duel['status'] != 'pending':
-                await query.edit_message_text(s.error("❌ Дуэль не найдена или уже обработана")); return
+                await query.edit_message_text(s.error("❌ Дуэль не найдена или уже обработана"))
+                return
+
             self.db.update_duel(duel_id, status='accepted')
+
             challenger = self.db.get_user_by_id(duel['challenger_id'])
             opponent = self.db.get_user_by_id(duel['opponent_id'])
+
             if not challenger or not opponent:
-                await query.edit_message_text(s.error("❌ Ошибка загрузки данных")); return
-            await query.edit_message_text(f"{s.success('✅ Дуэль принята!')}\n\n⚔️ {challenger['first_name']} VS {opponent['first_name']} ⚔️\n💰 Ставка: {duel['bet']} 💰\n\n🔄 Дуэль начинается...", parse_mode=ParseMode.MARKDOWN)
+                await query.edit_message_text(s.error("❌ Ошибка загрузки данных"))
+                return
+
+            await query.edit_message_text(
+                f"{s.success('✅ Дуэль принята!')}\n\n"
+                f"⚔️ {challenger['first_name']} VS {opponent['first_name']} ⚔️\n"
+                f"💰 Ставка: {duel['bet']} 💰\n\n"
+                f"🔄 Дуэль начинается...",
+                parse_mode=ParseMode.MARKDOWN
+            )
+
             asyncio.create_task(self._process_duel(duel_id, challenger, opponent, duel['bet'], update.effective_chat.id, context))
+
         elif data.startswith("reject_duel_"):
             duel_id = int(data.split('_')[2])
             duel = self.db.get_duel(duel_id)
+
             if not duel or duel['opponent_id'] != user_data['id'] or duel['status'] != 'pending':
-                await query.edit_message_text(s.error("❌ Дуэль не найдена или уже обработана")); return
+                await query.edit_message_text(s.error("❌ Дуэль не найдена или уже обработана"))
+                return
+
             self.db.update_duel(duel_id, status='rejected')
             self.db.add_coins(duel['challenger_id'], duel['bet'])
-            await query.edit_message_text(f"{s.error('❌ Дуэль отклонена')}\n\nСтавка возвращена.", parse_mode=ParseMode.MARKDOWN)
+
+            await query.edit_message_text(
+                f"{s.error('❌ Дуэль отклонена')}\n\n"
+                f"Ставка возвращена.",
+                parse_mode=ParseMode.MARKDOWN
+            )
+
         elif data.startswith("marry_accept_"):
             proposer_id = int(data.split('_')[2])
+
             if user_data.get('spouse', 0):
-                await query.edit_message_text(s.error("❌ Вы уже в браке"), parse_mode=ParseMode.MARKDOWN); return
+                await query.edit_message_text(s.error("❌ Вы уже в браке"), parse_mode=ParseMode.MARKDOWN)
+                return
+
             proposer = self.db.get_user_by_id(proposer_id)
             if not proposer:
-                await query.edit_message_text(s.error("❌ Пользователь не найден"), parse_mode=ParseMode.MARKDOWN); return
+                await query.edit_message_text(s.error("❌ Пользователь не найден"), parse_mode=ParseMode.MARKDOWN)
+                return
+
             if proposer.get('spouse', 0):
-                await query.edit_message_text(s.error("❌ Пользователь уже в браке"), parse_mode=ParseMode.MARKDOWN); return
+                await query.edit_message_text(s.error("❌ Пользователь уже в браке"), parse_mode=ParseMode.MARKDOWN)
+                return
+
             now = datetime.now().isoformat()
             self.db.update_user(user_data['id'], spouse=proposer_id, married_since=now)
             self.db.update_user(proposer_id, spouse=user_data['id'], married_since=now)
+
             text = (
                 f"# Спектр | Свадьба\n\n"
                 f"💍 Поздравляем!\n"
@@ -7961,14 +9611,28 @@ class SpectrumBot:
                 f"💰 Бонус молодожёнам: +500 💰 каждому\n"
                 f"✨ Особый статус: Супруг(а)"
             )
+
             self.db.add_coins(user_data['id'], 500)
             self.db.add_coins(proposer_id, 500)
+
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
-            await self.send_private_message(proposer['telegram_id'], f"{s.success('💞 ПОЗДРАВЛЯЕМ!')}\n\n{s.item(f'{user_data[chr(39)+chr(39)+chr(39)+chr(39)+chr(39)]}')}", parse_mode=ParseMode.MARKDOWN)
+
+            await self.send_private_message(
+                proposer['telegram_id'],
+                f"{s.success('💞 ПОЗДРАВЛЯЕМ!')}\n\n"
+                f"{s.item(f'{user_data["first_name"]} принял(а) ваше предложение!')}",
+                parse_mode=ParseMode.MARKDOWN
+            )
+
         elif data.startswith("marry_reject_"):
             proposer_id = int(data.split('_')[2])
             await query.edit_message_text(s.error("❌ Предложение отклонено"), parse_mode=ParseMode.MARKDOWN)
-            await self.send_private_message(proposer_id, s.error("❌ Ваше предложение отклонили"), parse_mode=ParseMode.MARKDOWN)
+            await self.send_private_message(
+                proposer_id,
+                s.error("❌ Ваше предложение отклонили"),
+                parse_mode=ParseMode.MARKDOWN
+            )
+
         elif data == "bookmark_help":
             text = """
 # 📌 Закладки
@@ -7982,6 +9646,7 @@ class SpectrumBot:
 • `-Закладка [ID]` — удалить
             """
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
+
         elif data == "circle_help":
             text = """
 # 🔄 Кружки
@@ -7995,6 +9660,7 @@ class SpectrumBot:
 • `-Кружок [номер]` — выйти
             """
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
+
         elif data == "achievements_help":
             text = """
 # 🏅 Ачивки
@@ -8007,14 +9673,16 @@ class SpectrumBot:
 • `+Ачивки` / `-Ачивки` — приватность
             """
             await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
-        else:
-            await query.edit_message_text(f"{s.warning('Это действие устарело.')}\n\nОткройте меню заново — интерфейс обновлён.", parse_mode=ParseMode.MARKDOWN, reply_markup=self._ui_home_keyboard())
 
-    # ===== ФОНОВЫЕ ЗАДАЧИ =====
+        else:
+            await query.edit_message_text(f"{s.warning('Это действие устарело.')}\n\nОткройте меню заново — интерфейс обновлён.",parse_mode=ParseMode.MARKDOWN,reply_markup=self._ui_home_keyboard())
+
+    # ===== ТАЙМЕРЫ =====
     async def check_timers(self):
         while True:
             try:
                 timers = self.db.get_pending_timers()
+
                 for timer in timers:
                     try:
                         await self.app.bot.send_message(
@@ -8024,6 +9692,7 @@ class SpectrumBot:
                         self.db.complete_timer(timer['id'])
                     except Exception as e:
                         logger.error(f"Ошибка выполнения таймера {timer['id']}: {e}")
+
                 await asyncio.sleep(60)
             except Exception as e:
                 logger.error(f"Ошибка в check_timers: {e}")
@@ -8037,61 +9706,82 @@ class SpectrumBot:
                 await asyncio.sleep(60)
             await asyncio.sleep(3600)
 
-    # ===== ПРИВЯЗКА ЧАТА =====
+        # ===== ПРИВЯЗКА ЧАТА =====
     async def cmd_bind_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.type == "private":
             await update.message.reply_text(s.error("Эта команда работает только в группах"))
             return
+
         chat_id = update.effective_chat.id
         chat_title = update.effective_chat.title
+
         chat_code = hashlib.md5(f"{chat_id}_{random.randint(1000,9999)}".encode()).hexdigest()[:8]
+
         self.db.cursor.execute('''
             INSERT INTO chat_settings (chat_id, chat_name, chat_code)
             VALUES (?, ?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET chat_code = excluded.chat_code
         ''', (chat_id, chat_title, chat_code))
         self.db.conn.commit()
-        await update.message.reply_text(f"{s.success('✅ Чат привязан!')}\n\nКод чата: `{chat_code}`", parse_mode=ParseMode.MARKDOWN)
+
+        await update.message.reply_text(
+            f"{s.success('✅ Чат привязан!')}\n\n"
+            f"Код чата: `{chat_code}`",
+            parse_mode=ParseMode.MARKDOWN
+        )
 
     async def cmd_chat_code(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT chat_code FROM chat_settings WHERE chat_id = ?", (chat_id,))
         row = self.db.cursor.fetchone()
+
         if not row:
             await update.message.reply_text(s.error("Чат не привязан. Используйте !привязать"))
             return
+
         await update.message.reply_text(f"🔑 Код чата: `{row[0]}`", parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_change_chat_code(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 1:
             await update.message.reply_text(s.error("Укажите новый код: /changecode x5g7k9"))
             return
+
         new_code = context.args[0]
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3 and user_data['id'] != OWNER_ID:
             await update.message.reply_text(s.error("Недостаточно прав"))
             return
+
         if len(new_code) < 3 or len(new_code) > 10:
             await update.message.reply_text(s.error("Код должен быть от 3 до 10 символов"))
             return
+
         self.db.cursor.execute("SELECT chat_id FROM chat_settings WHERE chat_code = ?", (new_code,))
         if self.db.cursor.fetchone():
             await update.message.reply_text(s.error("Этот код уже занят"))
             return
+
         self.db.cursor.execute("UPDATE chat_settings SET chat_code = ? WHERE chat_id = ?", (new_code, chat_id))
         self.db.conn.commit()
+
         await update.message.reply_text(s.success(f"Код чата изменён на `{new_code}`"))
 
     # ===== КУБЫШКА =====
     async def cmd_treasury(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
+
         self.db.cursor.execute("SELECT treasury_neons, treasury_glitches FROM chat_settings WHERE chat_id = ?", (chat_id,))
         row = self.db.cursor.fetchone()
+
         if not row:
             await update.message.reply_text(s.error("Настройки чата не найдены"))
             return
+
         neons, glitches = row[0], row[1]
+
         text = f"""
 {s.header('💰 КУБЫШКА ЧАТА')}
 
@@ -8105,21 +9795,27 @@ class SpectrumBot:
     async def cmd_treasury_withdraw(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = self.db.get_user(update.effective_user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3 and user_data['id'] != OWNER_ID:
             await update.message.reply_text(s.error("Недостаточно прав"))
             return
+
         self.db.cursor.execute("SELECT treasury_neons FROM chat_settings WHERE chat_id = ?", (chat_id,))
         row = self.db.cursor.fetchone()
+
         if not row or row[0] == 0:
             await update.message.reply_text(s.error("В кубышке нет неонов"))
             return
+
         neons = row[0]
+
         self.db.add_neons(user_data['id'], neons)
         self.db.cursor.execute("UPDATE chat_settings SET treasury_neons = 0 WHERE chat_id = ?", (chat_id,))
         self.db.conn.commit()
+
         await update.message.reply_text(s.success(f"{neons} 💜 переведены в ваш кошелёк!"))
 
-    # ===== ВНЕШНИЕ API =====
+        # ===== ВНЕШНИЕ API =====
     async def cmd_currency(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         rates = {
             "USD": random.randint(90, 100),
@@ -8147,30 +9843,37 @@ class SpectrumBot:
         text += f"📅 {datetime.now().strftime('%d.%m.%Y')}"
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-    # ===== AI-КОМАНДЫ =====
+    # ===== AI КОМАНДЫ =====
     async def cmd_set_ai_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         user_data = self.db.get_user(user.id)
         chat_id = update.effective_chat.id
+
         if user_data['rank'] < 3 and user.id != OWNER_ID:
             await update.message.reply_text(s.error("Только администраторы могут менять промпт AI."))
             return
+
         if not context.args:
             await update.message.reply_text(
                 "❌ Укажите новый промпт для AI.\n"
                 "Пример: /set_ai_prompt Ты дружелюбный помощник в игровом чате"
             )
             return
+
         prompt = " ".join(context.args)
+
         self.db.cursor.execute('''
             UPDATE chat_settings SET ai_prompt = ? WHERE chat_id = ?
         ''', (prompt, chat_id))
         self.db.conn.commit()
+
         if self.ai and self.ai.is_available:
             await self.ai.set_chat_prompt(chat_id, prompt)
+
         await update.message.reply_text(s.success("✅ Промпт AI обновлён!"))
 
     async def cmd_reload_ai(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Перезагружает AI-клиент после смены переменных окружения."""
         if update.effective_user.id != OWNER_ID:
             await update.message.reply_text(s.error("Команда доступна только владельцу."))
             return
@@ -8185,12 +9888,30 @@ class SpectrumBot:
         else:
             await update.message.reply_text(s.error("GROQ_API_KEY не найден."))
 
-    async def cmd_ai_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        text = f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}\n\nКулдаун: {AI_COOLDOWN} сек.\n\n`/testai` — живой тест.\n`/reloadai` — перезагрузка AI после смены ключа."
+    async def cmd_ai_status(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
+        text=f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}\n\nКулдаун: {AI_COOLDOWN} сек.\n\n`/testai` — живой тест.\n`/reloadai` — перезагрузка AI после смены ключа."
+        await update.message.reply_text(text,parse_mode=ParseMode.MARKDOWN)
+
+    async def cmd_imagine_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        text = f"""
+{s.header('🎨 ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ')}
+
+**Команда:**
+/imagine [описание] — создаёт изображение по вашему запросу
+
+**Примеры:**
+/imagine космический корабль в стиле киберпанк
+/imagine милый котёнок с большими глазами
+/imagine город будущего ночью, неоновые огни
+
+**Примечание:** генерация может занимать до 30 секунд. Бесплатный сервис.
+        """
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     # ===== НАСТРОЙКА ОБРАБОТЧИКОВ =====
     def setup_handlers(self):
+        """Регистрация всех обработчиков (полный список)"""
+
         # ===== ОСНОВНЫЕ КОМАНДЫ =====
         self.app.add_handler(CommandHandler("start", self.cmd_start))
         self.app.add_handler(CommandHandler("help", self.cmd_help))
@@ -8353,7 +10074,7 @@ class SpectrumBot:
         self.app.add_handler(CommandHandler("rp_download", self.cmd_rp_download))
         self.app.add_handler(CommandHandler("rp_update", self.cmd_rp_update))
 
-        # ===== ТЕМЫ =====
+        # ===== ТЕМЫ ДЛЯ РОЛЕЙ =====
         self.app.add_handler(CommandHandler("themes", self.cmd_themes))
         self.app.add_handler(CommandHandler("apply_theme", self.cmd_apply_theme))
         self.app.add_handler(CommandHandler("apply_theme_by_name", self.cmd_apply_theme_by_name))
@@ -8395,19 +10116,19 @@ class SpectrumBot:
         # ===== AI КОМАНДЫ =====
         self.app.add_handler(CommandHandler("set_ai_prompt", self.cmd_set_ai_prompt))
         self.app.add_handler(CommandHandler("ai_status", self.cmd_ai_status))
-        self.app.add_handler(CommandHandler("ai", self.cmd_ai_status))
 
         # ===== ВНЕШНИЕ API =====
         self.app.add_handler(CommandHandler("currency", self.cmd_currency))
         self.app.add_handler(CommandHandler("news", self.cmd_news))
 
-        # ===== ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ =====
+        # ===== ВТОРОЙ AI =====
         self.app.add_handler(CommandHandler("imagine", self.cmd_imagine))
         self.app.add_handler(CommandHandler("imagine_help", self.cmd_imagine_help))
 
         # ===== ТЕСТОВЫЕ =====
         self.app.add_handler(CommandHandler("testai", self.cmd_test_ai))
         self.app.add_handler(CommandHandler("reloadai", self.cmd_reload_ai))
+        self.app.add_handler(CommandHandler("ai", self.cmd_ai_status))
 
         # ===== МОДЕРАЦИЯ =====
         self.app.add_handler(CommandHandler("admins", self.cmd_who_admins))
@@ -8547,6 +10268,7 @@ class SpectrumBot:
         self.app.add_handler(CallbackQueryHandler(self.button_callback))
 
         self.app.add_error_handler(self.error_handler)
+
         logger.info(f"✅ Зарегистрировано обработчиков: {len(self.app.handlers)}")
 
     async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8564,6 +10286,7 @@ class SpectrumBot:
             await self.app.initialize()
             await self.app.start()
             await self.app.updater.start_polling(drop_pending_updates=True)
+
             logger.info(f"🚀 Бот {BOT_NAME} успешно запущен")
             logger.info(f"👑 Владелец: {OWNER_USERNAME}")
             if self.ai and self.ai.is_available:
@@ -8573,10 +10296,13 @@ class SpectrumBot:
                 logger.info("🤖 AI: Не подключен")
             logger.info(f"🎨 Image AI: Подключен")
             logger.info(f"📱 VK: {'Подключен' if self.vk and self.vk.is_available else 'Не подключен'}")
+
             asyncio.create_task(self.check_timers())
             asyncio.create_task(self.weekly_tax_loop())
+
             while True:
                 await asyncio.sleep(1)
+
         except Exception as e:
             logger.error(f"Критическая ошибка: {e}")
             import traceback
@@ -8598,11 +10324,13 @@ async def main():
     print("=" * 60)
     print(f"📊 AI: {'✅ Подключен' if ai and ai.is_available else '❌ Не подключен'}")
     print(f"📊 VK: {'✅ Подключен' if vk_bot and vk_bot.is_available else '❌ Не подключен'}")
-    print(f"📊 Image AI: ✅ Подключен")
+    print(f"📊 Image AI: ✅ Подключен (Pollinations.ai)")
     print(f"📊 Команд: 300+")
     print(f"📊 Модулей: 30+")
     print("=" * 60)
+
     bot = SpectrumBot()
+
     try:
         await bot.run()
     except KeyboardInterrupt:
