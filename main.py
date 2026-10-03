@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-СПЕКТР v9.0 NEON CORE — ПОЛНАЯ ПЕРЕРАБОТКА
+СПЕКТР v10.0 OBSIDIAN PRISM — ПОЛНЫЙ REDESIGN
 """
 
 # ========== ИМПОРТЫ ==========
@@ -156,6 +156,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+install_prism_ui()
 
 # ========== КЛАСС ДЛЯ ГРАФИКОВ ==========
 class ChartGenerator:
@@ -190,52 +191,175 @@ class ChartGenerator:
 
 # ========== УЛУЧШЕННЫЙ ДИЗАЙН (НОВЫЙ STYLE) ==========
 class Style:
-    """Neon Core UI: единый язык карточек, статусов и навигации."""
-    WIDE = "━━━━━━━━━━━━━━━━━━━━"
-    THIN = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+    """SPECTRUM / OBSIDIAN PRISM — единый визуальный слой для всего бота."""
+    TOP = "╭────────────────────────────╮"
+    MID = "├────────────────────────────┤"
+    BOT = "╰────────────────────────────╯"
+    THIN = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+    BRAND = "⟡ S P E C T R U M"
+
     @classmethod
-    def header(cls, title, emoji="✦"):
-        return f"{emoji} **{title}**\n`{cls.WIDE}`"
+    def header(cls, title, emoji="⟡"):
+        return f"{cls.TOP}\n│ {emoji}  **{title}**\n{cls.MID}"
+
     @classmethod
-    def section(cls, title, emoji="◈"):
+    def section(cls, title, emoji="◆"):
         return f"\n{emoji} **{title}**\n`{cls.THIN}`\n"
+
     @classmethod
     def cmd(cls, cmd, desc, usage=""):
         suffix = f" `{usage}`" if usage else ""
-        return f"`/{cmd}{suffix}` — {desc}\n"
+        return f"`/{cmd}{suffix}`  ·  {desc}\n"
+
     @classmethod
-    def item(cls, text, emoji="•"):
+    def item(cls, text, emoji="›"):
         return f"{emoji} {text}"
+
     @classmethod
     def stat(cls, name, value, emoji="◆"):
-        return f"{emoji} **{name}**  {value}"
+        return f"{emoji} **{name}**  ·  {value}"
+
     @classmethod
-    def progress(cls, current, total, length=12):
+    def progress(cls, current, total, length=10):
         ratio = 0 if total <= 0 else max(0, min(1, current / total))
         filled = int(round(ratio * length))
-        return f"`{'█' * filled}{'·' * (length - filled)}` {current}/{total}"
+        return f"`{'▰' * filled}{'▱' * (length - filled)}`  {current}/{total}"
+
     @classmethod
-    def success(cls, text): return f"🟢 **{text}**"
+    def success(cls, text): return f"🟢  **{text}**"
     @classmethod
-    def error(cls, text): return f"🔴 **{text}**"
+    def error(cls, text): return f"🔴  **{text}**"
     @classmethod
-    def warning(cls, text): return f"🟠 **{text}**"
+    def warning(cls, text): return f"🟠  **{text}**"
     @classmethod
-    def info(cls, text): return f"🔵 **{text}**"
+    def info(cls, text): return f"🔵  **{text}**"
+
     @classmethod
     def card(cls, title, rows, emoji="◆"):
-        body = "\n".join(rows)
-        return f"{cls.header(title, emoji)}\n\n{body}"
+        return f"{cls.header(title, emoji)}\n\n" + "\n".join(rows) + f"\n{cls.BOT}"
+
     @classmethod
     def code(cls, text): return f"`{text}`"
+
     @classmethod
     def balance(cls, coins, neons, glitches):
-        return f"💰 `{coins:,}`   💜 `{neons:,}`   🖥 `{glitches:,}`"
+        return f"💰 `{coins:,}`   ·   💜 `{neons:,}`   ·   🖥 `{glitches:,}`"
+
     @classmethod
     def footer(cls):
-        return f"\n`{cls.THIN}`\n`Neon Core · Spectrum v9`"
+        return f"\n`{cls.BOT}`\n`{cls.BRAND} · v9`"
 
 s = Style()
+
+# ========== ГЛОБАЛЬНЫЙ UI-СЛОЙ OBSIDIAN PRISM ==========
+# Все команды проекта проходят через этот слой: старые тексты и кнопки
+# автоматически получают новый визуальный язык, поэтому не требуется
+# вручную переписывать сотни reply_text/edit_message_text.
+_PRISM_MARK = "⟡ S P E C T R U M"
+
+_PRISM_BUTTONS = {
+    "ui_home": "⌂  Главная", "ui_profile": "◉  Профиль", "ui_wallet": "◇  Кошелёк",
+    "ui_ai": "AI  Искусственный интеллект", "ui_bosses": "☄  Боссы", "ui_quests": "◆  Квесты",
+    "ui_achievements": "✦  Достижения", "ui_stats": "▦  Статистика", "ui_ratings": "№  Рейтинги",
+    "ui_shop": "▣  Магазин", "ui_bonuses": "✧  Бонусы", "ui_games": "▶  Игры", "ui_help": "?  Помощь",
+    "ui_exchange": "↔  Биржа", "ui_myorders": "≡  Мои ордера", "ai_check": "◉  Проверить AI",
+    "shop_energy": "⚡  Энергия", "shop_weapons": "⚔  Арсенал", "shop_status": "◇  Статусы",
+    "rating_neons": "💜  Неоны", "rating_glitches": "🖥  Глитчи", "economy_wallet": "◇  Кошелёк",
+    "economy_stats": "▦  Экономика", "shop_menu": "▣  Магазин", "exchange_menu": "↔  Биржа",
+    "_back": "‹  Назад", "_refresh": "⟳  Обновить", "_close": "×  Закрыть",
+}
+
+def _prism_button_text(btn):
+    data = getattr(btn, "callback_data", None)
+    if data in _PRISM_BUTTONS:
+        return _PRISM_BUTTONS[data]
+    if data == "ui_home": return _PRISM_BUTTONS["ui_home"]
+    if isinstance(data, str):
+        if data.startswith("boss_attack_"): return "⚔  Атаковать босса"
+        if data.startswith("buy_"): return "＋  Купить"
+        if data.startswith("rating_"): return "№  Открыть рейтинг"
+        if data.startswith("game_info_"): return "▶  Открыть игру"
+        if data.startswith("chat_card_"): return "▣  Карточка чата"
+        if "back" in data.lower(): return _PRISM_BUTTONS["_back"]
+        if "refresh" in data.lower() or data.startswith("ui_"): return _PRISM_BUTTONS["_refresh"]
+    return btn.text
+
+def _prism_keyboard(markup):
+    if not isinstance(markup, InlineKeyboardMarkup):
+        return markup
+    rows=[]
+    for row in markup.inline_keyboard:
+        new_row=[]
+        for btn in row:
+            text = _prism_button_text(btn)
+            kwargs = {}
+            for attr in ("callback_data", "url", "web_app", "login_url",
+                         "switch_inline_query", "switch_inline_query_current_chat",
+                         "callback_game", "pay"):
+                value = getattr(btn, attr, None)
+                if value is not None:
+                    kwargs[attr] = value
+            try:
+                copy_text = getattr(btn, "copy_text", None)
+                if copy_text is not None:
+                    kwargs["copy_text"] = copy_text
+            except Exception:
+                pass
+            try:
+                new_row.append(InlineKeyboardButton(text, **kwargs))
+            except TypeError:
+                # Совместимость с python-telegram-bot 20.7 и более старыми версиями.
+                minimal = {}
+                if btn.callback_data is not None: minimal["callback_data"] = btn.callback_data
+                elif btn.url is not None: minimal["url"] = btn.url
+                elif getattr(btn, "pay", False): minimal["pay"] = True
+                new_row.append(InlineKeyboardButton(text, **minimal))
+        rows.append(new_row)
+    return InlineKeyboardMarkup(rows)
+
+def _prism_text(text):
+    if not text or _PRISM_MARK in text:
+        return text
+    # Не переписываем чистые короткие уведомления/технические ответы,
+    # но все полноценные командные экраны получают единый chrome.
+    if len(text) < 18:
+        return text
+    return f"{_PRISM_MARK}\n`OBSIDIAN PRISM`\n\n{text}\n\n`{Style.THIN}`\n`/menu · навигация  |  /help · команды`"
+
+
+def install_prism_ui():
+    """Единый UI для всех существующих команд и callback-экранов."""
+    try:
+        from telegram import Message
+        from telegram import CallbackQuery
+        if getattr(Message, "_prism_installed", False):
+            return
+        _reply_text = Message.reply_text
+        _reply_photo = Message.reply_photo
+        _edit = CallbackQuery.edit_message_text
+
+        async def reply_text(self, text=None, *args, **kwargs):
+            kwargs["reply_markup"] = _prism_keyboard(kwargs.get("reply_markup"))
+            return await _reply_text(self, _prism_text(text), *args, **kwargs)
+
+        async def reply_photo(self, *args, **kwargs):
+            if "caption" in kwargs:
+                kwargs["caption"] = _prism_text(kwargs["caption"])
+            kwargs["reply_markup"] = _prism_keyboard(kwargs.get("reply_markup"))
+            return await _reply_photo(self, *args, **kwargs)
+
+        async def edit_message_text(self, text=None, *args, **kwargs):
+            kwargs["reply_markup"] = _prism_keyboard(kwargs.get("reply_markup"))
+            return await _edit(self, _prism_text(text), *args, **kwargs)
+
+        Message.reply_text = reply_text
+        Message.reply_photo = reply_photo
+        CallbackQuery.edit_message_text = edit_message_text
+        Message._prism_installed = True
+        logger.info("✦ Obsidian Prism UI installed globally")
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Prism UI install failed: %s", exc)
+
 
 # ========== БАЗА ДАННЫХ (НАЧАЛО) ==========
 class Database:
@@ -2345,11 +2469,15 @@ class GroqAI:
                 model=self.model,
                 messages=[{"role":"system","content":"Ответь только OK."},{"role":"user","content":"Проверка связи"}],
                 temperature=0,
-                max_tokens=8,
+                max_tokens=16,
+                include_reasoning=False,
             ), timeout=20)
-            result = str(getattr(completion.choices[0].message, "content", "") or "").strip()
+            msg = completion.choices[0].message
+            result = str(getattr(msg, "content", "") or "").strip()
             if not result:
-                raise RuntimeError("Пустой ответ модели")
+                result = str(getattr(msg, "reasoning", "") or "").strip()
+            if not result:
+                raise RuntimeError("Пустой ответ модели (content/reasoning пусты)")
             self.health_state, self.health_detail = "ok", f"Живой запрос успешен · {self.model}"
             self.last_success_at = time.time()
             return True, result
@@ -2385,11 +2513,16 @@ class GroqAI:
         for attempt in range(2):
             try:
                 completion = await asyncio.wait_for(self.async_client.chat.completions.create(
-                    model=self.model, messages=messages, temperature=0.7, max_tokens=500, top_p=0.9
+                    model=self.model, messages=messages, temperature=0.7, max_tokens=500, top_p=0.9, include_reasoning=False
                 ), timeout=35)
-                response = str(getattr(completion.choices[0].message, "content", "") or "").strip()
+                msg = completion.choices[0].message
+                response = str(getattr(msg, "content", "") or "").strip()
+                # GPT-OSS может возвращать рассуждение отдельно; для пользовательского
+                # ответа всегда просим reasoning=False, но сохраняем безопасный fallback.
                 if not response:
-                    raise RuntimeError("Модель вернула пустой ответ")
+                    response = str(getattr(msg, "reasoning", "") or "").strip()
+                if not response:
+                    raise RuntimeError("Модель вернула пустой ответ (content/reasoning пусты)")
                 self.contexts[user_id].append(f"Пользователь: {message}")
                 self.contexts[user_id].append(f"Спектр: {response}")
                 self.user_last_ai[user_id] = time.time()
@@ -8891,13 +9024,13 @@ class SpectrumBot:
 
     def _ui_home_keyboard(self):
         return InlineKeyboardMarkup([
-            [InlineKeyboardButton("👤 Профиль", callback_data="ui_profile"), InlineKeyboardButton("💼 Кошелёк", callback_data="ui_wallet")],
-            [InlineKeyboardButton("🤖 AI", callback_data="ui_ai"), InlineKeyboardButton("👾 Боссы", callback_data="ui_bosses")],
-            [InlineKeyboardButton("🎯 Квесты", callback_data="ui_quests"), InlineKeyboardButton("🏅 Достижения", callback_data="ui_achievements")],
-            [InlineKeyboardButton("📊 Статистика", callback_data="ui_stats"), InlineKeyboardButton("🏆 Рейтинги", callback_data="ui_ratings")],
-            [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop"), InlineKeyboardButton("🎁 Бонусы", callback_data="ui_bonuses")],
-            [InlineKeyboardButton("🎮 Мини-игры", callback_data="ui_games"), InlineKeyboardButton("❓ Помощь", callback_data="ui_help")],
-            [InlineKeyboardButton("🔄 Обновить", callback_data="ui_home")],
+            [InlineKeyboardButton("◉  Профиль", callback_data="ui_profile"), InlineKeyboardButton("◇  Кошелёк", callback_data="ui_wallet")],
+            [InlineKeyboardButton("▶  Игры", callback_data="ui_games"), InlineKeyboardButton("☄  Боссы", callback_data="ui_bosses"), InlineKeyboardButton("◆  Квесты", callback_data="ui_quests")],
+            [InlineKeyboardButton("▣  Магазин", callback_data="ui_shop"), InlineKeyboardButton("↔  Биржа", callback_data="ui_exchange")],
+            [InlineKeyboardButton("AI  AI-центр", callback_data="ui_ai"), InlineKeyboardButton("✦  Достижения", callback_data="ui_achievements")],
+            [InlineKeyboardButton("▦  Статистика", callback_data="ui_stats"), InlineKeyboardButton("№  Рейтинги", callback_data="ui_ratings")],
+            [InlineKeyboardButton("✧  Бонусы", callback_data="ui_bonuses"), InlineKeyboardButton("?  Помощь", callback_data="ui_help")],
+            [InlineKeyboardButton("⟳  Обновить панель", callback_data="ui_home")],
         ])
 
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8911,7 +9044,7 @@ class SpectrumBot:
 
         # Новая единая навигация. Все эти кнопки реально выполняют действие, а не показывают заглушку.
         if data == "ui_home":
-            text = f"{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}\n\n💰 Экономика  ·  🎮 Игры  ·  👾 Боссы\n🛍 Магазин  ·  💱 Биржа  ·  🎯 Квесты\n📊 Статистика  ·  🏆 Рейтинги  ·  🎁 Бонусы\n\n👤 {user.first_name} · уровень {u['level']}\n💰 {u['coins']:,}  💜 {u['neons']:,}  🖥 {u['glitches']:,}"
+            text = f"{s.card('SPECTRUM · DASHBOARD', [f'◉ **{user.first_name}**  ·  уровень **{u["level"]}**', f'💰 {u["coins"]:,}   💜 {u["neons"]:,}   🖥 {u["glitches"]:,}', f'⚡ Энергия  {u["energy"]}/100', '↳ Выберите модуль ниже'], emoji='⟡')}"
             await self._ui_edit(query, text, self._ui_home_keyboard()); return
 
         if data == "ui_ai":
