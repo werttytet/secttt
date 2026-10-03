@@ -188,18 +188,19 @@ class ChartGenerator:
         plt.close(fig)
         return buf
 
-# ========== УЛУЧШЕННЫЙ ДИЗАЙН (НОВЫЙ STYLE) ==========
+# ========== SPECTRUM / OBSIDIAN NEON — ЕДИНЫЙ UI-СЛОЙ ==========
 class Style:
-    """SPECTRUM / OBSIDIAN PRISM — единый визуальный слой для всего бота."""
-    TOP = "╭────────────────────────────╮"
-    MID = "├────────────────────────────┤"
-    BOT = "╰────────────────────────────╯"
-    THIN = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
-    BRAND = "⟡ S P E C T R U M"
+    """Единый визуальный слой пользовательского интерфейса.
+
+    Только оформление: команды, callback_data, бизнес-правила и данные не меняются.
+    """
+    THIN = "━━━━━━━━━━━━━━━━━━━━"
+    BRAND = "⟡ SPECTRUM"
+    SUBBRAND = "OBSIDIAN NEON"
 
     @classmethod
     def header(cls, title, emoji="⟡"):
-        return f"{cls.TOP}\n│ {emoji}  **{title}**\n{cls.MID}"
+        return f"{cls.BRAND} · **{title}**\n{cls.THIN}"
 
     @classmethod
     def section(cls, title, emoji="◆"):
@@ -225,20 +226,28 @@ class Style:
         return f"`{'▰' * filled}{'▱' * (length - filled)}`  {current}/{total}"
 
     @classmethod
-    def success(cls, text): return f"🟢  **{text}**"
+    def success(cls, text):
+        return f"💜 **{text}**"
+
     @classmethod
-    def error(cls, text): return f"🔴  **{text}**"
+    def error(cls, text):
+        return f"⚠️ **{text}**"
+
     @classmethod
-    def warning(cls, text): return f"🟠  **{text}**"
+    def warning(cls, text):
+        return f"◈ **{text}**"
+
     @classmethod
-    def info(cls, text): return f"🔵  **{text}**"
+    def info(cls, text):
+        return f"⟡ **{text}**"
 
     @classmethod
     def card(cls, title, rows, emoji="◆"):
-        return f"{cls.header(title, emoji)}\n\n" + "\n".join(rows) + f"\n{cls.BOT}"
+        return f"{cls.header(title, emoji)}\n\n" + "\n".join(rows)
 
     @classmethod
-    def code(cls, text): return f"`{text}`"
+    def code(cls, text):
+        return f"`{text}`"
 
     @classmethod
     def balance(cls, coins, neons, glitches):
@@ -246,96 +255,144 @@ class Style:
 
     @classmethod
     def footer(cls):
-        return f"\n`{cls.BOT}`\n`{cls.BRAND} · v9`"
+        # Короткий footer используется только там, где он уже был предусмотрен исходником.
+        return f"\n`{cls.THIN}`\n`{cls.BRAND} · {BOT_VERSION}`"
+
 
 s = Style()
 
-# ========== ГЛОБАЛЬНЫЙ UI-СЛОЙ OBSIDIAN PRISM ==========
-# Все команды проекта проходят через этот слой: старые тексты и кнопки
-# автоматически получают новый визуальный язык, поэтому не требуется
-# вручную переписывать сотни reply_text/edit_message_text.
-_PRISM_MARK = "⟡ S P E C T R U M"
+# ========== ГЛОБАЛЬНЫЙ UI-СЛОЙ OBSIDIAN NEON ==========
+# Он меняет только отображение существующих сообщений и кнопок.
+_PRISM_MARK = Style.BRAND
 
 _PRISM_BUTTONS = {
-    "ui_home": "⌂  Главная", "ui_profile": "◉  Профиль", "ui_wallet": "◇  Кошелёк",
-    "ui_ai": "AI  Искусственный интеллект", "ui_bosses": "☄  Боссы", "ui_quests": "◆  Квесты",
-    "ui_achievements": "✦  Достижения", "ui_stats": "▦  Статистика", "ui_ratings": "№  Рейтинги",
-    "ui_shop": "▣  Магазин", "ui_bonuses": "✧  Бонусы", "ui_games": "▶  Игры", "ui_help": "?  Помощь",
-    "ui_exchange": "↔  Биржа", "ui_myorders": "≡  Мои ордера", "ai_check": "◉  Проверить AI",
-    "shop_energy": "⚡  Энергия", "shop_weapons": "⚔  Арсенал", "shop_status": "◇  Статусы",
-    "rating_neons": "💜  Неоны", "rating_glitches": "🖥  Глитчи", "economy_wallet": "◇  Кошелёк",
-    "economy_stats": "▦  Экономика", "shop_menu": "▣  Магазин", "exchange_menu": "↔  Биржа",
-    "_back": "‹  Назад", "_refresh": "⟳  Обновить", "_close": "×  Закрыть",
+    # Главная навигация
+    "ui_home": "⌂  Главная",
+    "ui_profile": "◉  Профиль",
+    "ui_wallet": "💰  Кошелёк",
+    "ui_ai": "AI  ИИ-центр",
+    "ui_bosses": "⚔  Боссы",
+    "ui_quests": "◆  Квесты",
+    "ui_achievements": "✦  Достижения",
+    "ui_stats": "▦  Статистика",
+    "ui_ratings": "№  Рейтинги",
+    "ui_shop": "▣  Магазин",
+    "ui_bonuses": "✧  Бонусы",
+    "ui_games": "▶  Игры",
+    "ui_help": "?  Помощь",
+    "ui_exchange": "↔  Биржа",
+    "ui_myorders": "≡  Мои ордера",
+
+    # Вложенные экраны
+    "ai_check": "◉  Проверить AI",
+    "shop_energy": "⚡  Энергия",
+    "shop_weapons": "⚔  Арсенал",
+    "shop_status": "◇  Статусы",
+    "rating_neons": "💜  Неоны",
+    "rating_glitches": "🖥  Глитчи",
+    "economy_wallet": "💰  Кошелёк",
+    "economy_stats": "▦  Экономика",
+    "shop_menu": "▣  Магазин",
+    "exchange_menu": "↔  Биржа",
+    "_back": "‹  Назад",
+    "_refresh": "⟳  Обновить",
+    "_close": "×  Закрыть",
 }
 
+
 def _prism_button_text(btn):
+    """Меняет только подпись кнопки; callback_data и URL остаются 1:1."""
     data = getattr(btn, "callback_data", None)
     if data in _PRISM_BUTTONS:
         return _PRISM_BUTTONS[data]
-    if data == "ui_home": return _PRISM_BUTTONS["ui_home"]
     if isinstance(data, str):
-        if data.startswith("boss_attack_"): return "⚔  Атаковать босса"
-        if data.startswith("buy_"): return "＋  Купить"
-        if data.startswith("rating_"): return "№  Открыть рейтинг"
-        if data.startswith("game_info_"): return "▶  Открыть игру"
-        if data.startswith("chat_card_"): return "▣  Карточка чата"
-        if "back" in data.lower(): return _PRISM_BUTTONS["_back"]
-        if "refresh" in data.lower() or data.startswith("ui_"): return _PRISM_BUTTONS["_refresh"]
+        low = data.lower()
+        if data.startswith("boss_attack_"):
+            return "⚔  Атаковать"
+        if data.startswith("buy_"):
+            return "＋  Купить"
+        if data.startswith("rating_"):
+            return "№  Открыть"
+        if data.startswith("game_info_"):
+            return "▶  Открыть"
+        if data.startswith("chat_card_"):
+            return "▣  Карточка"
+        if "back" in low:
+            return _PRISM_BUTTONS["_back"]
+        if "refresh" in low:
+            return _PRISM_BUTTONS["_refresh"]
+        if data.startswith("ui_"):
+            return _PRISM_BUTTONS["_refresh"]
     return btn.text
 
+
 def _prism_keyboard(markup):
+    """Сохраняет все callback_data/URL и приводит строки к компактной сетке."""
     if not isinstance(markup, InlineKeyboardMarkup):
         return markup
-    rows=[]
+
+    rows = []
     for row in markup.inline_keyboard:
-        new_row=[]
-        for btn in row:
-            text = _prism_button_text(btn)
-            kwargs = {}
-            for attr in ("callback_data", "url", "web_app", "login_url",
-                         "switch_inline_query", "switch_inline_query_current_chat",
-                         "callback_game", "pay"):
-                value = getattr(btn, attr, None)
-                if value is not None:
-                    kwargs[attr] = value
-            try:
-                copy_text = getattr(btn, "copy_text", None)
-                if copy_text is not None:
-                    kwargs["copy_text"] = copy_text
-            except Exception:
-                pass
-            try:
-                new_row.append(InlineKeyboardButton(text, **kwargs))
-            except TypeError:
-                # Совместимость с python-telegram-bot 20.7 и более старыми версиями.
-                minimal = {}
-                if btn.callback_data is not None: minimal["callback_data"] = btn.callback_data
-                elif btn.url is not None: minimal["url"] = btn.url
-                elif getattr(btn, "pay", False): minimal["pay"] = True
-                new_row.append(InlineKeyboardButton(text, **minimal))
-        rows.append(new_row)
+        # Не больше двух кнопок в строке; порядок и обработчики не меняются.
+        for offset in range(0, len(row), 2):
+            new_row = []
+            for btn in row[offset:offset + 2]:
+                text = _prism_button_text(btn)
+                kwargs = {}
+                for attr in (
+                    "callback_data", "url", "web_app", "login_url",
+                    "switch_inline_query", "switch_inline_query_current_chat",
+                    "callback_game", "pay"
+                ):
+                    value = getattr(btn, attr, None)
+                    if value is not None:
+                        kwargs[attr] = value
+                try:
+                    copy_text = getattr(btn, "copy_text", None)
+                    if copy_text is not None:
+                        kwargs["copy_text"] = copy_text
+                except Exception:
+                    pass
+                try:
+                    new_row.append(InlineKeyboardButton(text, **kwargs))
+                except TypeError:
+                    minimal = {}
+                    if getattr(btn, "callback_data", None) is not None:
+                        minimal["callback_data"] = btn.callback_data
+                    elif getattr(btn, "url", None) is not None:
+                        minimal["url"] = btn.url
+                    elif getattr(btn, "pay", False):
+                        minimal["pay"] = True
+                    new_row.append(InlineKeyboardButton(text, **minimal))
+            if new_row:
+                rows.append(new_row)
     return InlineKeyboardMarkup(rows)
 
+
 def _prism_text(text):
+    """Добавляет лёгкий бренд только к полноценным экранам без существующего chrome."""
     if not text or _PRISM_MARK in text:
         return text
-    # Не переписываем чистые короткие уведомления/технические ответы,
-    # но все полноценные командные экраны получают единый chrome.
-    if len(text) < 18:
+    if not isinstance(text, str):
         return text
-    return f"{_PRISM_MARK}\n`OBSIDIAN PRISM`\n\n{text}\n\n`{Style.THIN}`\n`/menu · навигация  |  /help · команды`"
+    # Короткие технические ответы (/id, /ping, /uptime и callback alerts) остаются компактными.
+    if len(text.strip()) < 18:
+        return text
+    # Уже оформленные экраны s.header/s.card не получают второй заголовок.
+    return f"{_PRISM_MARK}\n`{Style.SUBBRAND}`\n\n{text}"
 
 
 def install_prism_ui():
-    """Единый UI для всех существующих команд и callback-экранов."""
+    """Единый UI для существующих команд, фото, callback-экранов и прямых send_message."""
     try:
-        from telegram import Message
-        from telegram import CallbackQuery
+        from telegram import Message, CallbackQuery, Bot
         if getattr(Message, "_prism_installed", False):
             return
+
         _reply_text = Message.reply_text
         _reply_photo = Message.reply_photo
         _edit = CallbackQuery.edit_message_text
+        _bot_send_message = Bot.send_message
 
         async def reply_text(self, text=None, *args, **kwargs):
             kwargs["reply_markup"] = _prism_keyboard(kwargs.get("reply_markup"))
@@ -351,18 +408,22 @@ def install_prism_ui():
             kwargs["reply_markup"] = _prism_keyboard(kwargs.get("reply_markup"))
             return await _edit(self, _prism_text(text), *args, **kwargs)
 
+        async def send_message(self, chat_id, text=None, *args, **kwargs):
+            kwargs["reply_markup"] = _prism_keyboard(kwargs.get("reply_markup"))
+            return await _bot_send_message(self, chat_id, _prism_text(text), *args, **kwargs)
+
         Message.reply_text = reply_text
         Message.reply_photo = reply_photo
         CallbackQuery.edit_message_text = edit_message_text
+        Bot.send_message = send_message
         Message._prism_installed = True
-        logger.info("✦ Obsidian Prism UI installed globally")
+        logger.info("✦ Obsidian Neon UI installed globally")
     except Exception as exc:
-        logging.getLogger(__name__).warning("Prism UI install failed: %s", exc)
+        logging.getLogger(__name__).warning("Obsidian Neon UI install failed: %s", exc)
 
 
 # Устанавливаем глобальный UI только после объявления функции.
 install_prism_ui()
-
 
 # ========== БАЗА ДАННЫХ (НАЧАЛО) ==========
 class Database:
