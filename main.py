@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-СПЕКТР v7.1 ULTIMATE - ОБНОВЛЁННАЯ ЭКОНОМИКА И ИНТЕРФЕЙС
+СПЕКТР v9.0 NEON CORE — ПОЛНАЯ ПЕРЕРАБОТКА
 """
 
 # ========== ИМПОРТЫ ==========
@@ -87,7 +87,7 @@ NEON_PRICE = 150
 ECONOMY_VERSION = "7.1"
 
 # ========== КОНСТАНТЫ ==========
-BOT_NAME = "Спектр"
+BOT_NAME = "Спектр · Neon Core"
 BOT_VERSION = "7.1 ULTIMATE"
 BOT_USERNAME = "SpectrumServers_bot"
 
@@ -190,33 +190,50 @@ class ChartGenerator:
 
 # ========== УЛУЧШЕННЫЙ ДИЗАЙН (НОВЫЙ STYLE) ==========
 class Style:
-    SEPARATOR = "━━━━━━━━━━━━━━━━━━━━"
-    SEPARATOR_LIGHT = "┄" * 20
-    SEPARATOR_BOLD = "━━━━━━━━━━━━━━━━━━━━━━━━"
+    """Neon Core UI: единый язык карточек, статусов и навигации."""
+    WIDE = "━━━━━━━━━━━━━━━━━━━━"
+    THIN = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
     @classmethod
-    def header(cls,title,emoji="💠"): return f"{emoji} **{title.upper()}**\n`{cls.SEPARATOR_BOLD}`\n"
+    def header(cls, title, emoji="✦"):
+        return f"{emoji} **{title}**\n`{cls.WIDE}`"
     @classmethod
-    def section(cls,title,emoji="📌"): return f"\n{emoji} **{title}**\n`{cls.SEPARATOR_LIGHT}`\n"
+    def section(cls, title, emoji="◈"):
+        return f"\n{emoji} **{title}**\n`{cls.THIN}`\n"
     @classmethod
-    def cmd(cls,cmd,desc,usage=""): return f"▸ `{cmd}{(' '+usage) if usage else ''}` — {desc}"
+    def cmd(cls, cmd, desc, usage=""):
+        suffix = f" `{usage}`" if usage else ""
+        return f"`/{cmd}{suffix}` — {desc}\n"
     @classmethod
-    def item(cls,text,emoji="•"): return f"{emoji} {text}"
+    def item(cls, text, emoji="•"):
+        return f"{emoji} {text}"
     @classmethod
-    def stat(cls,name,value,emoji="◉"): return f"{emoji} **{name}:** {value}"
+    def stat(cls, name, value, emoji="◆"):
+        return f"{emoji} **{name}**  {value}"
     @classmethod
-    def progress(cls,current,total,length=15):
-        ratio=0 if total<=0 else max(0,min(1,current/total)); filled=int(round(ratio*length))
-        return f"`{'█'*filled}{'░'*(length-filled)}` {current}/{total}"
+    def progress(cls, current, total, length=12):
+        ratio = 0 if total <= 0 else max(0, min(1, current / total))
+        filled = int(round(ratio * length))
+        return f"`{'█' * filled}{'·' * (length - filled)}` {current}/{total}"
     @classmethod
-    def success(cls,text): return f"✅ **{text}**"
+    def success(cls, text): return f"🟢 **{text}**"
     @classmethod
-    def error(cls,text): return f"❌ **{text}**"
+    def error(cls, text): return f"🔴 **{text}**"
     @classmethod
-    def warning(cls,text): return f"⚠️ **{text}**"
+    def warning(cls, text): return f"🟠 **{text}**"
     @classmethod
-    def info(cls,text): return f"ℹ️ **{text}**"
+    def info(cls, text): return f"🔵 **{text}**"
     @classmethod
-    def code(cls,text): return f"`{text}`"
+    def card(cls, title, rows, emoji="◆"):
+        body = "\n".join(rows)
+        return f"{cls.header(title, emoji)}\n\n{body}"
+    @classmethod
+    def code(cls, text): return f"`{text}`"
+    @classmethod
+    def balance(cls, coins, neons, glitches):
+        return f"💰 `{coins:,}`   💜 `{neons:,}`   🖥 `{glitches:,}`"
+    @classmethod
+    def footer(cls):
+        return f"\n`{cls.THIN}`\n`Neon Core · Spectrum v9`"
 
 s = Style()
 
@@ -2230,14 +2247,20 @@ def parse_datetime(date_str: str) -> Optional[datetime]:
 
 # ========== GROQ AI КЛАСС (УЛУЧШЕННАЯ ВЕРСИЯ) ==========
 class GroqAI:
+    """Надёжный AI-слой: каталог моделей -> выбор -> health-check -> запрос."""
+    PREFERRED_MODELS = (
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.8-27b",
+    )
     def __init__(self, api_key: str):
-        self.api_key = api_key
+        self.api_key = (api_key or "").strip()
         self.client = None
+        self.async_client = None
         self.is_available = False
         self.contexts = defaultdict(lambda: deque(maxlen=10))
         self.user_last_ai = defaultdict(float)
         self.ai_cooldown = AI_COOLDOWN
-        self.toxic_users = defaultdict(int)
         self.blocked_users = set()
         self.last_error = None
         self.last_error_at = None
@@ -2245,130 +2268,189 @@ class GroqAI:
         self.request_count = 0
         self.success_count = 0
         self.error_count = 0
-        self.model = "llama-3.3-70b-versatile"
-        
-        if GROQ_AVAILABLE and api_key:
+        self.model = os.getenv("SPECTRUM_GROQ_MODEL", "openai/gpt-oss-120b").strip()
+        self.model_source = "env" if os.getenv("SPECTRUM_GROQ_MODEL") else "auto"
+        self.available_models = []
+        self.health_state = "unknown"
+        self.health_detail = "Не проверен"
+        self.last_http_error = None
+        if GROQ_AVAILABLE and self.api_key:
             try:
-                self.client = Groq(api_key=api_key)
-                self.async_client = AsyncGroq(api_key=api_key)
+                self.client = Groq(api_key=self.api_key)
+                self.async_client = AsyncGroq(api_key=self.api_key)
                 self.is_available = True
-                logger.info("✅ Groq AI инициализирован")
             except Exception as e:
-                logger.error(f"❌ Ошибка инициализации Groq: {e}")
-                self.is_available = False
-        
-        self.base_system_prompt = """ТЫ — СПЕКТР, УМНЫЙ ПОМОЩНИК В TELEGRAM БОТЕ. ТВОЯ ЗАДАЧА - ПОМОГАТЬ ПОЛЬЗОВАТЕЛЯМ, ОТВЕЧАТЬ НА ВОПРОСЫ И УЧАСТВОВАТЬ В ИГРАХ.
-
-ТВОЙ ХАРАКТЕР:
-- Ты дружелюбный и отзывчивый помощник
-- Отвечаешь кратко и по делу, без лишних эмодзи
-- Знаешь весь функционал бота и можешь объяснить команды
-- В играх (мафия, дуэли, орден) действуешь как ведущий
-
-ВАЖНЫЕ ПРАВИЛА:
-1. НЕ используй эмодзи в каждом сообщении - максимум 1-2, если уместно
-2. НЕ начинай сообщения со слова "Спектр" - просто отвечай
-3. В мафии и ордене общайся с игроками в ЛС, а не в общем чате
-4. Если не знаешь ответа - честно скажи об этом
-5. Будь вежливым, но не навязчивым"""
-        
+                self.health_state = "error"
+                self.health_detail = f"Инициализация: {type(e).__name__}: {str(e)[:120]}"
+        elif not self.api_key:
+            self.health_state = "no_key"
+            self.health_detail = "GROQ_API_KEY отсутствует"
+        else:
+            self.health_state = "offline"
+            self.health_detail = "Установите пакет groq"
+        self.base_system_prompt = (
+            "Ты — Спектр, спокойный и полезный AI-помощник внутри Telegram-бота. "
+            "Отвечай на языке пользователя, кратко и понятно. Не выдумывай команды, "
+            "которых нет. Если не уверен — скажи об этом. Не спамь эмодзи."
+        )
         self.chat_prompts = defaultdict(lambda: self.base_system_prompt)
-    
-    async def get_response(self,user_id:int,message:str,username:str="Пользователь",force_response:bool=False,chat_id:int=None)->Optional[str]:
+
+    async def refresh_models(self) -> list[str]:
+        if not self.async_client:
+            return []
+        try:
+            result = await asyncio.wait_for(self.async_client.models.list(), timeout=10)
+            ids = sorted({getattr(m, "id", "") for m in getattr(result, "data", []) if getattr(m, "id", "")})
+            self.available_models = ids
+            # Даже если env-модель задана, проверяем её реальное наличие.
+            if self.model not in ids:
+                for candidate in self.PREFERRED_MODELS:
+                    if candidate in ids:
+                        self.model = candidate
+                        self.model_source = "auto-fallback"
+                        break
+                else:
+                    self.model_source = "catalog-empty"
+            return ids
+        except Exception as e:
+            self.last_http_error = f"{type(e).__name__}: {str(e)[:180]}"
+            # Не меняем модель вслепую: реальный completion сам даст точный статус.
+            return []
+
+    def _classify_error(self, e):
+        name = type(e).__name__
+        msg = str(e)
+        if "401" in msg or name == "AuthenticationError":
+            return "auth_error", "401 · API-ключ Groq недействителен"
+        if "403" in msg or name == "PermissionDeniedError":
+            return "permission_error", "403 · доступ к модели запрещён"
+        if "404" in msg or name == "NotFoundError":
+            return "model_error", f"404 · модель `{self.model}` недоступна"
+        if "429" in msg or name == "RateLimitError":
+            return "rate_limit", "429 · превышен лимит Groq"
+        if "timeout" in msg.lower() or "Timeout" in name:
+            return "timeout", "Groq не ответил вовремя"
+        return "error", f"{name}: {msg[:180]}"
+
+    async def health_check(self) -> tuple[bool, str]:
+        if not self.api_key:
+            self.health_state, self.health_detail = "no_key", "GROQ_API_KEY отсутствует"
+            return False, self.health_detail
+        if not self.async_client:
+            self.health_state, self.health_detail = "offline", "Клиент Groq недоступен"
+            return False, self.health_detail
+        try:
+            await self.refresh_models()
+            completion = await asyncio.wait_for(self.async_client.chat.completions.create(
+                model=self.model,
+                messages=[{"role":"system","content":"Ответь только OK."},{"role":"user","content":"Проверка связи"}],
+                temperature=0,
+                max_tokens=8,
+            ), timeout=20)
+            result = str(getattr(completion.choices[0].message, "content", "") or "").strip()
+            if not result:
+                raise RuntimeError("Пустой ответ модели")
+            self.health_state, self.health_detail = "ok", f"Живой запрос успешен · {self.model}"
+            self.last_success_at = time.time()
+            return True, result
+        except Exception as e:
+            self.health_state, self.health_detail = self._classify_error(e)
+            self.last_error, self.last_error_at = self.health_detail, time.time()
+            return False, self.health_detail
+
+    async def get_response(self, user_id:int, message:str, username:str="Пользователь", force_response:bool=False, chat_id:int=None) -> Optional[str]:
         if not self.is_available:
-            self.last_error="GROQ_API_KEY не задан или библиотека groq недоступна"; self.last_error_at=time.time(); return None
-        now=time.time()
-        if not force_response and now-self.user_last_ai[user_id] < self.ai_cooldown:
-            self.last_error="AI cooldown"; self.last_error_at=now; return None
-        system_prompt=self.chat_prompts[chat_id] if chat_id else self.base_system_prompt
-        context=list(self.contexts[user_id])
-        messages=[{"role":"system","content":system_prompt},{"role":"system","content":f"Пользователь: {username}"},{"role":"system","content":"Контекст последних сообщений:\n"+("\n".join(context) if context else "Нет истории")},{"role":"user","content":message}]
-        async def request_once():
-            return await self.async_client.chat.completions.create(model=self.model,messages=messages,temperature=0.8,max_tokens=350,top_p=0.95,timeout=25.0)
-        self.request_count+=1; last_exc=None
+            self.last_error = self.health_detail
+            self.last_error_at = time.time()
+            return None
+        now = time.time()
+        if not force_response and now - self.user_last_ai[user_id] < self.ai_cooldown:
+            self.last_error = "AI cooldown"
+            self.last_error_at = now
+            return None
+        if self.health_state in {"auth_error", "permission_error", "model_error"}:
+            # Перед отказом пробуем обновить каталог: модель могла поменяться.
+            await self.refresh_models()
+        system_prompt = self.chat_prompts[chat_id] if chat_id else self.base_system_prompt
+        context = list(self.contexts[user_id])
+        messages = [
+            {"role":"system","content":system_prompt},
+            {"role":"system","content":f"Пользователь: {username}"},
+        ]
+        if context:
+            messages.append({"role":"system","content":"Последний контекст:\n" + "\n".join(context)})
+        messages.append({"role":"user","content":message[:8000]})
+        self.request_count += 1
+        last_exc = None
         for attempt in range(2):
             try:
-                completion=await asyncio.wait_for(request_once(),timeout=30.0)
-                choices=getattr(completion,"choices",None)
-                if not choices: raise RuntimeError("Groq вернул ответ без choices")
-                response=str(getattr(choices[0].message,"content",None) or "").strip()
-                if not response: raise RuntimeError("Groq вернул пустой ответ")
-                if response.lower().startswith("спектр:"): response=response.split(":",1)[1].strip()
-                elif response.lower().startswith("спектр "): response=response[7:].strip()
-                self.contexts[user_id].append(f"User: {message}"); self.contexts[user_id].append(f"AI: {response}")
-                self.user_last_ai[user_id]=time.time(); self.last_success_at=self.user_last_ai[user_id]; self.last_error=None; self.success_count+=1
+                completion = await asyncio.wait_for(self.async_client.chat.completions.create(
+                    model=self.model, messages=messages, temperature=0.7, max_tokens=500, top_p=0.9
+                ), timeout=35)
+                response = str(getattr(completion.choices[0].message, "content", "") or "").strip()
+                if not response:
+                    raise RuntimeError("Модель вернула пустой ответ")
+                self.contexts[user_id].append(f"Пользователь: {message}")
+                self.contexts[user_id].append(f"Спектр: {response}")
+                self.user_last_ai[user_id] = time.time()
+                self.last_success_at = self.user_last_ai[user_id]
+                self.last_error = None
+                self.success_count += 1
+                self.health_state = "ok"
                 return response
-            except asyncio.TimeoutError as e: last_exc=e
             except Exception as e:
-                last_exc=e
-                if attempt==0: await asyncio.sleep(0.6)
-        self.error_count+=1
-        self.last_error="таймаут Groq (30 секунд)" if isinstance(last_exc,asyncio.TimeoutError) else f"{type(last_exc).__name__}: {str(last_exc)[:180]}"
-        self.last_error_at=time.time(); logger.exception("Groq request failed: %s",self.last_error); return None
+                last_exc = e
+                state, detail = self._classify_error(e)
+                self.health_state, self.health_detail = state, detail
+                self.last_error, self.last_error_at = detail, time.time()
+                # Если модель реально недоступна — сразу обновляем каталог и повторяем один раз.
+                if state == "model_error" and attempt == 0:
+                    await self.refresh_models()
+                if attempt == 0:
+                    await asyncio.sleep(0.5)
+        self.error_count += 1
+        logger.error("Groq request failed: %s", self.last_error)
+        return None
 
-    async def get_game_response(self, user_id: int, game_type: str, game_state: Dict, 
-                               username: str = "Пользователь") -> Optional[str]:
-        if not self.is_available:
-            return None
-        try:
-            game_prompts = {
-                "mafia": "Ты ведущий в игре мафия. Общайся с игроком в ЛС, объясняй правила, сообщай результаты голосования.",
-                "order": "Ты глава Тайного Ордена. Общайся с избранными в ЛС, давай задания, сообщай о прогрессе.",
-                "duel": "Ты противник в дуэли. Играй честно, но с характером."
-            }
-            prompt = game_prompts.get(game_type, "Ты участвуешь в игре.")
-            messages = [
-                {"role": "system", "content": prompt},
-                {"role": "system", "content": f"Игрок: {username}"},
-                {"role": "system", "content": f"Состояние игры: {json.dumps(game_state, ensure_ascii=False)}"},
-                {"role": "user", "content": "Что скажешь игроку?"}
-            ]
-            loop = asyncio.get_event_loop()
-            def sync_request():
-                return self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=150,
-                    top_p=0.95
-                )
-            chat_completion = await loop.run_in_executor(None, sync_request)
-            response = chat_completion.choices[0].message.content
-            return response
-        except Exception as e:
-            logger.error(f"Groq game error: {e}")
-            return None
-    
-    async def should_respond(self, message: str, is_reply_to_bot: bool = False) -> bool:
-        return random.random() < 0.15
-    
-    async def set_chat_prompt(self, chat_id: int, prompt: str):
-        self.chat_prompts[chat_id] = prompt
-    
-    async def get_reaction(self, message: str) -> str:
-        msg_lower = message.lower()
-        if '?' in message:
-            return '❓'
-        elif any(word in msg_lower for word in ['победа', 'выиграл', 'красава']):
-            return '🏆'
-        elif any(word in msg_lower for word in ['поздравь', 'спасибо']):
-            return '✨'
+    async def get_game_response(self, user_id:int, game_type:str, game_state:Dict, username:str="Пользователь") -> Optional[str]:
+        # AI-ведущий оставлен только для безопасных игровых/социальных сценариев.
+        prompt = f"Ты ведущий мини-игры {game_type}. Объясни игроку следующий статус кратко и дружелюбно: {json.dumps(game_state, ensure_ascii=False)}"
+        return await self.get_response(user_id, prompt, username, force_response=True)
+
+    async def should_respond(self, message:str, is_reply_to_bot:bool=False) -> bool:
+        return is_reply_to_bot or random.random() < 0.15
+
+    async def set_chat_prompt(self, chat_id:int, prompt:str):
+        self.chat_prompts[chat_id] = prompt.strip()[:6000] or self.base_system_prompt
+
+    async def get_reaction(self, message:str) -> str:
+        if '?' in message: return '❓'
+        if any(w in message.lower() for w in ('спасибо','красава','поздрав')): return '✨'
         return ''
-    
+
     def diagnostics(self):
-        return (f"Состояние: {'🟢 подключен' if self.is_available else '🔴 отключен'}\n"
-                f"Модель: {self.model}\n"
-                f"API-ключ: {'есть' if self.api_key else 'нет'}\n"
-                f"Запросов: {self.request_count} | Успешно: {self.success_count} | Ошибок: {self.error_count}\n"
-                f"Последняя ошибка: {self.last_error or 'нет ошибок'}")
+        states = {
+            "ok":"🟢 работает","unknown":"🟡 не проверен","offline":"🔴 клиент недоступен",
+            "no_key":"🔴 нет ключа","auth_error":"🔴 неверный ключ","permission_error":"🔴 нет доступа",
+            "model_error":"🔴 модель недоступна","rate_limit":"🟠 лимит","timeout":"🟠 таймаут","error":"🔴 ошибка"
+        }
+        return (
+            f"Состояние: {states.get(self.health_state, '🟡 неизвестно')}\n"
+            f"Модель: `{self.model}` · источник: `{self.model_source}`\n"
+            f"API-ключ: {'есть' if self.api_key else 'нет'}\n"
+            f"Моделей в каталоге: {len(self.available_models)}\n"
+            f"Запросов: {self.request_count} · успешно: {self.success_count} · ошибок: {self.error_count}\n"
+            f"Диагностика: {self.health_detail}\n"
+            f"Последняя ошибка: {self.last_error or 'нет'}"
+        )
 
     async def close(self):
         try:
-            close=getattr(self.async_client,'close',None)
-            if close:
-                result=close()
+            if self.async_client and hasattr(self.async_client, "close"):
+                result = self.async_client.close()
                 if asyncio.iscoroutine(result): await result
-        except Exception: pass
+        except Exception:
+            pass
 
 # ========== КЛАСС ДЛЯ ГЕНЕРАЦИИ ИЗОБРАЖЕНИЙ (ВТОРОЙ AI) ==========
 class ImageAI:
@@ -2861,59 +2943,42 @@ class SpectrumBot:
             if referrer_id != user_data['id']:
                 self.db.update_user(user_data['id'], platform="telegram", referrer_id=referrer_id)
                 self.db.add_neons(referrer_id, 50, platform="telegram")
-                try:
-                    await self.send_private_message(
-                        referrer_id,
-                        f"✅ По вашей ссылке зарегистрировался {user.first_name}! +50 💜"
-                    )
-                except:
-                    pass
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎲 Случайная беседа", callback_data="random_chat")],
-            [InlineKeyboardButton("🏆 Беседы топ дня", callback_data="top_chats")],
-            [InlineKeyboardButton("📋 Команды", callback_data="help_menu")],
-            [InlineKeyboardButton("🔧 Установка", callback_data="setup_info")],
-            [InlineKeyboardButton("💜 Что такое неоны", callback_data="neons_info")],
-            [InlineKeyboardButton("🎁 Бонусы", callback_data="bonuses_menu")]
-        ])
-        text = f"""
-{s.header('ПРИВЕТСТВИЕ')}
-
-👨‍💼 [Spectrum | Чат-менеджер](https://t.me/{BOT_USERNAME}) приветствует Вас!
-
-Я могу предложить следующие темы:
-
-1). [установка](https://teletype.in/@nobucraft/2_pbVPOhaYo) — инструкция установки Спектра;
-2). [команды](https://teletype.in/@nobucraft/h0ZU9C1yXNS) — список команд бота;
-3). что такое неоны — неоны, виртуальная валюта, как её получить;
-4). [бонусы](https://teletype.in/@nobucraft/60hXq-x3h6S) — какие есть бонусы во вселенной Спектра;
-5). мой спам — проверить, есть ли вы в базе «Спектр-антиспам».
-
-[Список всех команд с их описанием](https://teletype.in/@nobucraft/h0ZU9C1yXNS)
-[Канал](https://t.me/Spectrum_Game) с важными новостями.
-[Канал с полезными статьями](https://t.me/Spectrum_poleznoe)
-
-🔈 Для вызова клавиатуры с основными темами, введите `начать` или `помощь`.
-        """
-        await update.message.reply_text(
-            text,
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True,
-            reply_markup=keyboard
+        text = (
+            f"{s.header('СПЕКТР', '◆')}\n\n"
+            f"**Neon Core** — единый центр чата, экономики, прогресса и AI.\n\n"
+            f"{s.balance(user_data['coins'], user_data['neons'], user_data['glitches'])}\n"
+            f"⭐ Уровень: **{user_data['level']}**  ·  🏆 Репутация: **{user_data['reputation']}**\n\n"
+            f"Нажми **Меню**, чтобы открыть систему.\n"
+            f"{s.footer()}"
         )
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("◈ МЕНЮ", callback_data="ui_home"), InlineKeyboardButton("👤 ПРОФИЛЬ", callback_data="ui_profile")],
+            [InlineKeyboardButton("💼 КОШЕЛЁК", callback_data="ui_wallet"), InlineKeyboardButton("🎯 КВЕСТЫ", callback_data="ui_quests")],
+            [InlineKeyboardButton("👾 БОССЫ", callback_data="ui_bosses"), InlineKeyboardButton("🤖 AI", callback_data="ui_ai")],
+            [InlineKeyboardButton("🏅 ДОСТИЖЕНИЯ", callback_data="ui_achievements"), InlineKeyboardButton("📊 СТАТИСТИКА", callback_data="ui_stats")],
+            [InlineKeyboardButton("❓ ПОМОЩЬ", callback_data="ui_help")],
+        ])
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb, disable_web_page_preview=True)
         self.db.log_action(user_data['id'], 'start', platform="telegram")
 
-    async def cmd_test_ai(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
-        if not self.ai or not self.ai.is_available:
-            await update.message.reply_text(f"{s.error('AI не подключен')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}",parse_mode=ParseMode.MARKDOWN); return
-        status=await update.message.reply_text("🤖 Проверяю соединение с Groq…")
+    async def cmd_test_ai(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        status = await update.message.reply_text("🤖 **Проверяю AI…**", parse_mode=ParseMode.MARKDOWN)
         try:
-            await update.message.chat.send_action(action="typing")
-            response=await self.ai.get_response(update.effective_user.id,"Ответь одной короткой фразой: AI работает.",update.effective_user.first_name,force_response=True,chat_id=update.effective_chat.id)
-            if response: await status.edit_text(f"{s.success('AI отвечает')}\n\n🤖 {response}\n\n{self.ai.diagnostics()}",parse_mode=ParseMode.MARKDOWN)
-            else: await status.edit_text(f"{s.error('AI не вернул ответ')}\n\n{self.ai.diagnostics()}",parse_mode=ParseMode.MARKDOWN)
+            ok, detail = await self.ai.health_check() if self.ai else (False, "AI объект отсутствует")
+            if ok:
+                await status.edit_text(
+                    f"{s.success('AI работает')}\n\n"
+                    f"Ответ проверки: `{detail}`\n\n{self.ai.diagnostics()}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            else:
+                await status.edit_text(
+                    f"{s.error('AI недоступен')}\n\n{detail}\n\n{self.ai.diagnostics() if self.ai else ''}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
         except Exception as e:
-            logger.exception('/testai failed'); await status.edit_text(f"{s.error('Ошибка теста AI')}\n`{type(e).__name__}`",parse_mode=ParseMode.MARKDOWN)
+            logger.exception('/testai failed')
+            await status.edit_text(f"{s.error('Ошибка диагностики AI')}\n`{type(e).__name__}: {str(e)[:160]}`", parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = (
@@ -2941,7 +3006,6 @@ class SpectrumBot:
             f"{s.cmd('farm', 'ферма глитчей')}\n\n"
             f"{s.section('🎮 ИГРЫ')}"
             f"{s.cmd('games', 'меню игр')}\n"
-            f"{s.cmd('rr [ставка]', 'русская рулетка')}\n"
             f"{s.cmd('bosses', 'список боссов')}\n"
             f"{s.cmd('duel @user [ставка]', 'вызвать на дуэль')}\n\n"
             f"{s.section('👾 БОССЫ')}"
@@ -2965,9 +3029,16 @@ class SpectrumBot:
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def show_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        keyboard = self._ui_home_keyboard()
-        text = f"{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}\n\n💰 Экономика · 🎮 Игры · 👾 Боссы\n🛍 Магазин · 💱 Биржа · 🎯 Квесты\n📊 Статистика · 🏆 Рейтинги · 🎁 Бонусы\n\n👤 {update.effective_user.first_name} — выберите раздел."
-        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
+        u = self.db.get_user(update.effective_user.id, update.effective_user.first_name)
+        text = (
+            f"{s.header('SPECTRUM · NEON CORE', '◆')}\n\n"
+            f"Добро пожаловать, **{update.effective_user.first_name}**.\n"
+            f"{s.balance(u['coins'], u['neons'], u['glitches'])}\n\n"
+            f"{s.section('БЫСТРЫЙ ДОСТУП')}"
+            f"Выбери модуль — кнопки ведут в реальные разделы.\n"
+            f"{s.footer()}"
+        )
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=self._ui_home_keyboard())
 
     async def show_contacts(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"""
@@ -8821,11 +8892,12 @@ class SpectrumBot:
     def _ui_home_keyboard(self):
         return InlineKeyboardMarkup([
             [InlineKeyboardButton("👤 Профиль", callback_data="ui_profile"), InlineKeyboardButton("💼 Кошелёк", callback_data="ui_wallet")],
-            [InlineKeyboardButton("🎮 Игры", callback_data="ui_games"), InlineKeyboardButton("👾 Боссы", callback_data="ui_bosses")],
-            [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop"), InlineKeyboardButton("💱 Биржа", callback_data="ui_exchange")],
-            [InlineKeyboardButton("🎯 Квесты", callback_data="ui_quests"), InlineKeyboardButton("🏆 Рейтинги", callback_data="ui_ratings")],
-            [InlineKeyboardButton("📊 Статистика", callback_data="ui_stats"), InlineKeyboardButton("🎁 Бонусы", callback_data="ui_bonuses")],
-            [InlineKeyboardButton("❓ Помощь", callback_data="ui_help"), InlineKeyboardButton("🔄 Обновить", callback_data="ui_home")],
+            [InlineKeyboardButton("🤖 AI", callback_data="ui_ai"), InlineKeyboardButton("👾 Боссы", callback_data="ui_bosses")],
+            [InlineKeyboardButton("🎯 Квесты", callback_data="ui_quests"), InlineKeyboardButton("🏅 Достижения", callback_data="ui_achievements")],
+            [InlineKeyboardButton("📊 Статистика", callback_data="ui_stats"), InlineKeyboardButton("🏆 Рейтинги", callback_data="ui_ratings")],
+            [InlineKeyboardButton("🛍 Магазин", callback_data="ui_shop"), InlineKeyboardButton("🎁 Бонусы", callback_data="ui_bonuses")],
+            [InlineKeyboardButton("🎮 Мини-игры", callback_data="ui_games"), InlineKeyboardButton("❓ Помощь", callback_data="ui_help")],
+            [InlineKeyboardButton("🔄 Обновить", callback_data="ui_home")],
         ])
 
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8841,6 +8913,21 @@ class SpectrumBot:
         if data == "ui_home":
             text = f"{s.header('⚡ СПЕКТР · ГЛАВНОЕ МЕНЮ')}\n\n💰 Экономика  ·  🎮 Игры  ·  👾 Боссы\n🛍 Магазин  ·  💱 Биржа  ·  🎯 Квесты\n📊 Статистика  ·  🏆 Рейтинги  ·  🎁 Бонусы\n\n👤 {user.first_name} · уровень {u['level']}\n💰 {u['coins']:,}  💜 {u['neons']:,}  🖥 {u['glitches']:,}"
             await self._ui_edit(query, text, self._ui_home_keyboard()); return
+
+        if data == "ui_ai":
+            if not self.ai:
+                text = f"{s.header('🤖 AI · СТАТУС')}\n\n{s.error('AI-модуль не инициализирован')}"
+            else:
+                text = f"{s.header('🤖 AI · NEON CORE')}\n\n" + self.ai.diagnostics() + "\n\n💬 В группе: напиши `Спектр ...`\n💬 В ЛС: отправь обычное сообщение\n🧪 Диагностика: `/testai`"
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("🧪 Проверить AI",callback_data="ai_check")],[InlineKeyboardButton("🔄 Обновить",callback_data="ui_ai")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
+
+        if data == "ai_check":
+            if not self.ai:
+                await query.answer("AI не инициализирован",show_alert=True); return
+            ok, detail = await self.ai.health_check()
+            await query.answer("AI работает" if ok else detail[:180], show_alert=True)
+            await self._ui_edit(query, f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics()}", InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Обновить",callback_data="ui_ai")],[self._ui_back()]])); return
 
         if data == "ui_profile":
             name = u.get('nickname') or user.first_name
@@ -8878,8 +8965,8 @@ class SpectrumBot:
             await self._ui_edit(query,f"{s.header('🎁 БОНУС ПОЛУЧЕН')}\n\n💰 **+{coins:,}**\n💜 **+{neons}**\n🔥 Стрик: **{streak} дн.**",InlineKeyboardMarkup([[InlineKeyboardButton("💼 Кошелёк",callback_data="ui_wallet")],[self._ui_back()]])); return
 
         if data == "ui_shop":
-            text=f"{s.header('🛍 КИБЕР-МАГАЗИН')}\n\nВыберите раздел. Покупки ниже выполняются сразу и списывают реальные средства."
-            kb=InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Лечение",callback_data="shop_heal"),InlineKeyboardButton("⚡ Энергия",callback_data="shop_energy")],[InlineKeyboardButton("⚔️ Оружие",callback_data="shop_weapons"),InlineKeyboardButton("💎 VIP/Premium",callback_data="shop_status")],[InlineKeyboardButton("🤖 Кибер-бонусы",callback_data="ui_bonuses")],[self._ui_back()]])
+            text=f"{s.header('🛍 КИБЕР-МАГАЗИН')}\n\nПокупки ниже выполняются сразу и списывают реальные средства.\n\nВыбирай улучшения персонажа и статусы."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("❤️ Лечение",callback_data="shop_heal"),InlineKeyboardButton("⚡ Энергия",callback_data="shop_energy")],[InlineKeyboardButton("💎 VIP/Premium",callback_data="shop_status")],[InlineKeyboardButton("🤖 Кибер-бонусы",callback_data="ui_bonuses")],[self._ui_back()]])
             await self._ui_edit(query,text,kb); return
 
         if data == "shop_heal":
@@ -8921,11 +9008,12 @@ class SpectrumBot:
             await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("💱 Биржа",callback_data="ui_exchange")],[self._ui_back()]])); return
 
         if data == "ui_games":
-            text=f"{s.header('🎮 ИГРЫ')}\n\n🎲 /dicebet [ставка]\n🎰 /slots [ставка]\n✊ /rps\n💣 /saper [ставка]\n🔢 /guess [ставка]\n🐂 /bulls [ставка]\n🔫 /rr [ставка]\n⚔️ /duel\n🎭 /mafia"
-            await self._ui_edit(query,text,InlineKeyboardMarkup([[InlineKeyboardButton("🎲 Кости",callback_data="game_info_dice"),InlineKeyboardButton("🎰 Слоты",callback_data="game_info_slots")],[InlineKeyboardButton("✊ КНБ",callback_data="game_info_rps"),InlineKeyboardButton("💣 Сапёр",callback_data="game_info_saper")],[InlineKeyboardButton("⚔️ Дуэль",callback_data="game_info_duel"),InlineKeyboardButton("🎭 Мафия",callback_data="game_info_mafia")],[self._ui_back()]])); return
+            text=f"{s.header('🎮 МИНИ-ИГРЫ')}\n\nВыбирай игры без ставок и денежного риска. Награды — опыт и прогресс."
+            kb=InlineKeyboardMarkup([[InlineKeyboardButton("✊ КНБ",callback_data="game_info_rps"),InlineKeyboardButton("🔢 Угадай число",callback_data="game_info_guess")],[InlineKeyboardButton("🐂 Быки и коровы",callback_data="game_info_bulls"),InlineKeyboardButton("⚔️ Дуэль",callback_data="game_info_duel")],[InlineKeyboardButton("🎭 Мафия",callback_data="game_info_mafia")],[self._ui_back()]])
+            await self._ui_edit(query,text,kb); return
         if data.startswith('game_info_'):
-            names={'dice':'/dicebet [ставка] — бросок костей','slots':'/slots [ставка] — игровые слоты','rps':'/rps — камень, ножницы, бумага','saper':'/saper [ставка] — сапёр','duel':'/duel @user [ставка] — дуэль','mafia':'/mafia — запустить мафию'}
-            await query.answer(names.get(data[10:],'Команда доступна через /games'),show_alert=True); return
+            names={'rps':'/rps — камень, ножницы, бумага','guess':'/guess — угадай число без ставок','bulls':'/bulls — быки и коровы без ставок','duel':'/duel — дуэль за рейтинг','mafia':'/mafia — социальная игра'}
+            await query.answer(names.get(data[10:],'Раздел доступен через /games'),show_alert=True); return
 
         if data == "ui_quests":
             quests=self.db.get_user_quests(u['id'])
@@ -9648,8 +9736,24 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
 
         await update.message.reply_text(s.success("✅ Промпт AI обновлён!"))
 
+    async def cmd_reload_ai(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Перезагружает AI-клиент после смены переменных окружения."""
+        if update.effective_user.id != OWNER_ID:
+            await update.message.reply_text(s.error("Команда доступна только владельцу."))
+            return
+        key = os.getenv("GROQ_API_KEY", "").strip()
+        self.ai = GroqAI(key) if key else None
+        if self.ai:
+            ok, detail = await self.ai.health_check()
+            await update.message.reply_text(
+                f"{s.success('AI перезагружен') if ok else s.warning('AI перезагружен, но проверка не прошла')}\n\n{detail}\n\n{self.ai.diagnostics()}",
+                parse_mode=ParseMode.MARKDOWN
+            )
+        else:
+            await update.message.reply_text(s.error("GROQ_API_KEY не найден."))
+
     async def cmd_ai_status(self,update:Update,context:ContextTypes.DEFAULT_TYPE):
-        text=f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}\n\nМодель: `llama-3.3-70b-versatile`\nКулдаун: {AI_COOLDOWN} сек.\n\n`/testai` — живой тест."
+        text=f"{s.header('🤖 AI · ДИАГНОСТИКА')}\n\n{self.ai.diagnostics() if self.ai else 'AI объект отсутствует'}\n\nКулдаун: {AI_COOLDOWN} сек.\n\n`/testai` — живой тест.\n`/reloadai` — перезагрузка AI после смены ключа."
         await update.message.reply_text(text,parse_mode=ParseMode.MARKDOWN)
 
     async def cmd_imagine_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -9887,6 +9991,7 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
 
         # ===== ТЕСТОВЫЕ =====
         self.app.add_handler(CommandHandler("testai", self.cmd_test_ai))
+        self.app.add_handler(CommandHandler("reloadai", self.cmd_reload_ai))
         self.app.add_handler(CommandHandler("ai", self.cmd_ai_status))
 
         # ===== МОДЕРАЦИЯ =====
@@ -10048,8 +10153,12 @@ https://teletype.in/@nobucraft/2_pbVPOhaYo
 
             logger.info(f"🚀 Бот {BOT_NAME} успешно запущен")
             logger.info(f"👑 Владелец: {OWNER_USERNAME}")
-            logger.info(f"🤖 AI: {'Подключен' if self.ai and self.ai.is_available else 'Не подключен'}")
-            logger.info(f"🎨 Image AI: Подключен (бесплатный Pollinations)")
+            if self.ai and self.ai.is_available:
+                ok, detail = await self.ai.health_check()
+                logger.info(f"🤖 AI: {'РАБОТАЕТ' if ok else 'ОШИБКА'} | {detail}")
+            else:
+                logger.info("🤖 AI: Не подключен")
+            logger.info(f"🎨 Image AI: Подключен")
             logger.info(f"📱 VK: {'Подключен' if self.vk and self.vk.is_available else 'Не подключен'}")
 
             asyncio.create_task(self.check_timers())
