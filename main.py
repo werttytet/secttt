@@ -156,7 +156,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-install_prism_ui()
 
 # ========== КЛАСС ДЛЯ ГРАФИКОВ ==========
 class ChartGenerator:
@@ -359,6 +358,10 @@ def install_prism_ui():
         logger.info("✦ Obsidian Prism UI installed globally")
     except Exception as exc:
         logging.getLogger(__name__).warning("Prism UI install failed: %s", exc)
+
+
+# Устанавливаем глобальный UI только после объявления функции.
+install_prism_ui()
 
 
 # ========== БАЗА ДАННЫХ (НАЧАЛО) ==========
